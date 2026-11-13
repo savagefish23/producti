@@ -1,0 +1,137 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Semantic surface + ink tokens: they flip with the theme, so components
+     rarely need dark: variants. */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+
+  --animate-pop: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-xp-float: xp-float 0.9s ease-out forwards;
+  --animate-rise: rise 0.3s ease-out;
+  --animate-flicker: flicker 0.6s ease-out;
+}
+
+:root {
+  --canvas: #f4f3fb;
+  --surface: #ffffff;
+  --sunken: #f0eff8;
+  --ink: #1b1b30;
+  --muted: #66667f;
+  --line: #e6e4f1;
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: #0d0e1a;
+  --surface: #171829;
+  --sunken: #212339;
+  --ink: #f2f2f9;
+  --muted: #a0a1bd;
+  --line: #2b2d49;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .card {
+    border-radius: var(--radius-2xl);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgb(30 27 75 / 0.04), 0 4px 16px rgb(30 27 75 / 0.04);
+  }
+  .focus-ring {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px #8b5cf6;
+  }
+  .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+}
+
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.7);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes xp-float {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.9);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(1);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes flicker {
+  0% {
+    transform: scale(1) rotate(0);
+  }
+  40% {
+    transform: scale(1.35) rotate(-8deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
