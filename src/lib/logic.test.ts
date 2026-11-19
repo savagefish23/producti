@@ -6,7 +6,7 @@ import { reducer } from './reducer'
 import { createSeed } from './seed'
 import { friendDayXp, friendStreak, friendWeeklyXp } from './social'
 import { migrate, MIGRATIONS, SCHEMA_VERSION } from './storage'
-import { currentStreak, dayState, freezeAvailable, settleFreezes } from './streaks'
+import { completionRate, currentStreak, dayState, freezeAvailable, longestStreak, settleFreezes } from './streaks'
 
 const DAILY: Weekday[] = [0, 1, 2, 3, 4, 5, 6]
 const MWF: Weekday[] = [1, 3, 5]
@@ -81,6 +81,24 @@ describe('streaks', () => {
   it('ignores days before the habit existed', () => {
     const h = habit({ createdOn: '2026-11-12', completions: ['2026-11-12'] })
     expect(currentStreak(h, FRI, [])).toBe(1)
+  })
+})
+
+describe('habit stats', () => {
+  it('finds the longest streak, bridging frozen days', () => {
+    const h = habit({ createdOn: '2026-11-01', completions: ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-08', '2026-11-10', '2026-11-11'] })
+    expect(longestStreak(h, FRI, [])).toBe(3)
+    const freeze: FreezeUse = { habitId: 'h', date: '2026-11-09', weekStart: '2026-11-09' }
+    expect(longestStreak(h, FRI, [freeze])).toBe(3) // 8, 10, 11 joined by the freeze
+    expect(longestStreak({ ...h, completions: [...h.completions, '2026-11-12'] }, FRI, [freeze])).toBe(4)
+  })
+
+  it('computes the completion rate over scheduled days, leaving today open', () => {
+    const h = habit({ schedule: MWF, createdOn: '2026-10-01', completions: ['2026-11-09', '2026-11-11'] })
+    // Last 7 days ending Fri 13: Mon 9 done, Wed 11 done, Fri 13 still open.
+    expect(completionRate(h, FRI, 7)).toBe(1)
+    expect(completionRate({ ...h, completions: ['2026-11-09'] }, FRI, 7)).toBe(0.5)
+    expect(completionRate(habit({ createdOn: FRI }), FRI, 7)).toBeNull()
   })
 })
 

@@ -19,3 +19,8 @@ export function useHashRoute(): string {
 
   return route
 }
+
+/** Go to a hash route, e.g. navigate('/friends'). */
+export function navigate(path: string): void {
+  window.location.hash = `#${path}`
+}

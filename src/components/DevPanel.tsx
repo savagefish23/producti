@@ -27,7 +27,7 @@ export function DevPanel({
   return (
     <aside
       aria-label="Developer panel"
-      className="card animate-enter fixed bottom-20 left-4 z-40 w-72 p-4 shadow-(--shadow-lg) lg:bottom-4"
+      className="card animate-enter fixed right-4 bottom-20 z-40 w-72 p-4 shadow-(--shadow-lg) lg:bottom-4"
     >
       <div className="flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-sm font-semibold">

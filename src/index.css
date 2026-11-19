@@ -3,17 +3,18 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Direction: a paper training log on a kitchen table.
- * One warm neutral ramp, one ember accent (taken from the streak flame),
- * three text roles. Color lives in the content (streaks, the chart),
+ * Direction: a precise, calm tool for a daily routine.
+ * Navy-tinted ink neutrals, one emerald accent meaning "done / alive".
+ * Three text roles. Color lives in the content (streaks, the chart),
  * never in the chrome.
  */
 
 @theme inline {
-  --font-sans: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
   --color-canvas: var(--canvas);
+  --color-sidebar: var(--sidebar);
   --color-surface: var(--surface);
   --color-raised: var(--raised);
   --color-raised-hover: var(--raised-hover);
@@ -39,48 +40,50 @@
 }
 
 :root {
-  --canvas: #f7f4ee;
-  --surface: #fdfbf7;
-  --raised: #efe9df;
-  --raised-hover: #e7e0d3;
-  --ink: #1f1b16;
-  --ink-2: #5e554a;
-  --muted: #7b7266;
-  --line: rgb(31 27 22 / 0.09);
-  --line-strong: rgb(31 27 22 / 0.18);
-  --bar: #e0d8ca;
-  --accent: #c2410c;
-  --accent-hover: #a8380a;
+  --canvas: #f5f7fa;
+  --sidebar: #ffffff;
+  --surface: #ffffff;
+  --raised: #eceff4;
+  --raised-hover: #e3e7ee;
+  --ink: #111827;
+  --ink-2: #4b5565;
+  --muted: #6b7487;
+  --line: rgb(17 24 39 / 0.08);
+  --line-strong: rgb(17 24 39 / 0.16);
+  --bar: #dde2ea;
+  --accent: #047857;
+  --accent-hover: #065f46;
   --on-accent: #ffffff;
-  --accent-text: #b13a0a;
-  --accent-soft: rgb(194 65 12 / 0.1);
-  --positive: #16a34a;
+  --accent-text: #047857;
+  --accent-soft: rgb(4 120 87 / 0.1);
+  --positive: #047857;
   --negative: #dc2626;
-  --shadow-sm: 0 1px 2px rgb(31 27 22 / 0.05);
-  --shadow-lg: 0 8px 24px rgb(31 27 22 / 0.08);
+  --shadow-sm: 0 1px 2px rgb(17 24 39 / 0.05);
+  --shadow-lg: 0 8px 24px rgb(17 24 39 / 0.08);
   color-scheme: light;
 }
 
 .dark {
-  --canvas: #161513;
-  --surface: #1c1a18;
-  --raised: #262421;
-  --raised-hover: #2f2c28;
-  --ink: #efe9de;
-  --ink-2: #aaa398;
-  --muted: #8a847a;
-  --line: rgb(239 233 222 / 0.08);
-  --line-strong: rgb(239 233 222 / 0.16);
-  --bar: #34312c;
-  --accent: #f07a45;
-  --accent-hover: #f48d5e;
-  --on-accent: #1c0f07;
-  --accent-text: #f4915f;
-  --accent-soft: rgb(240 122 69 / 0.14);
-  --positive: #4cc38a;
-  --negative: #e5484d;
+  --canvas: #0b0d14;
+  --sidebar: #07080d;
+  --surface: #11141c;
+  --raised: #1a1e28;
+  --raised-hover: #222734;
+  --ink: #eef0f5;
+  --ink-2: #a3a9b8;
+  --muted: #7a8296;
+  --line: rgb(238 240 245 / 0.08);
+  --line-strong: rgb(238 240 245 / 0.16);
+  --bar: #262b38;
+  --accent: #34d399;
+  --accent-hover: #6ee7b7;
+  --on-accent: #052e1f;
+  --accent-text: #34d399;
+  --accent-soft: rgb(52 211 153 / 0.12);
+  --positive: #34d399;
+  --negative: #f87171;
   --shadow-sm: none;
-  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.5);
   color-scheme: dark;
 }
 
@@ -89,14 +92,14 @@ body {
   background: var(--canvas);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
 
 @layer components {
   .card {
-    border-radius: 16px;
+    border-radius: 12px;
     border: 1px solid var(--line);
     background: var(--surface);
     box-shadow: var(--shadow-sm);

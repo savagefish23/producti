@@ -116,3 +116,40 @@ export function dayState(
   if (date === today) return 'pending'
   return isFrozen(habit, date, freezes) ? 'frozen' : 'missed'
 }
+
+/**
+ * Longest streak the habit has ever had, by the same rules as
+ * `currentStreak`: scheduled days only, frozen days bridge without adding,
+ * and today never breaks a run.
+ */
+export function longestStreak(habit: Habit, today: ISODate, freezes: FreezeUse[]): number {
+  const done = new Set(habit.completions)
+  const frozen = new Set(freezes.filter((f) => f.habitId === habit.id).map((f) => f.date))
+  let best = 0
+  let run = 0
+  for (let day = habit.createdOn; day <= today; day = addDays(day, 1)) {
+    if (!isScheduled(habit, day)) continue
+    if (done.has(day)) best = Math.max(best, ++run)
+    else if (frozen.has(day) || day === today) continue
+    else run = 0
+  }
+  return best
+}
+
+/**
+ * Share of scheduled days completed in the `days` days ending yesterday,
+ * plus today if it is already done. Null when nothing was scheduled.
+ */
+export function completionRate(habit: Habit, today: ISODate, days = 30): number | null {
+  let due = 0
+  let done = 0
+  for (let i = days - 1; i >= 0; i--) {
+    const day = addDays(today, -i)
+    if (!isScheduled(habit, day)) continue
+    const completed = isCompleted(habit, day)
+    if (day === today && !completed) continue // today is still open
+    due += 1
+    if (completed) done += 1
+  }
+  return due === 0 ? null : done / due
+}

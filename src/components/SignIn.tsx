@@ -4,7 +4,7 @@ import { createSeed } from '../lib/seed'
 import type { ISODate, Theme } from '../types'
 import { Avatar } from './Avatar'
 import { HabitCard } from './HabitCard'
-import { Logo } from './Logo'
+import { Wordmark } from './Logo'
 
 interface Props {
   today: ISODate
@@ -36,8 +36,7 @@ export function SignIn({ today, theme, onToggleTheme, onSignIn }: Props) {
     <div className="grid min-h-dvh lg:grid-cols-2">
       <div className="flex flex-col px-6 py-6 sm:px-12">
         <div className="flex items-center gap-3">
-          <Logo />
-          <span className="text-[17px] font-semibold">Producti</span>
+          <Wordmark size={22} />
           <button
             type="button"
             onClick={onToggleTheme}

@@ -1,4 +1,4 @@
-import { Heart, MessageCircle } from 'lucide-react'
+import { ArrowRight, Heart, MessageCircle } from 'lucide-react'
 import { formatWhen } from '../lib/dates'
 import type { FeedItem, Friend, ISODate } from '../types'
 import { Avatar } from './Avatar'
@@ -10,19 +10,32 @@ interface Props {
   today: ISODate
   myName: string
   onCheer: (item: FeedItem) => void
+  title?: string
+  /** How many items to show. */
+  limit?: number
+  /** Adds a link to the full feed. */
+  viewAllHref?: string
+  /** Narrow column: icon-only cheer buttons. */
+  compact?: boolean
 }
 
-const VISIBLE = 14
-
-export function FriendFeed({ feed, friends, today, myName, onCheer }: Props) {
+export function FriendFeed({ feed, friends, today, myName, onCheer, title = 'Check-ins', limit = 14, viewAllHref, compact = false }: Props) {
   const byId = new Map(friends.map((f) => [f.id, f]))
-  const items = feed.slice(0, VISIBLE)
+  const items = feed.slice(0, limit)
 
   return (
     <section className="card p-5" aria-labelledby="feed-title">
-      <h2 id="feed-title" className="text-base font-semibold">
-        Check-ins
-      </h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="feed-title" className="text-base font-semibold">
+          {title}
+        </h2>
+        {viewAllHref && (
+          <a href={viewAllHref} className="btn btn-sm btn-ghost -mr-2">
+            View all
+            <ArrowRight className="size-4" strokeWidth={1.75} aria-hidden="true" />
+          </a>
+        )}
+      </div>
 
       {items.length === 0 ? (
         <div className="py-8 text-center">
@@ -60,7 +73,7 @@ export function FriendFeed({ feed, friends, today, myName, onCheer }: Props) {
                     disabled={item.cheered}
                     onClick={() => onCheer(item)}
                     aria-label={item.cheered ? `You cheered ${first}` : `Cheer ${first}`}
-                    className={`btn btn-sm btn-ghost shrink-0 disabled:opacity-100 ${item.cheered ? 'text-ink' : ''}`}
+                    className={`btn btn-sm btn-ghost shrink-0 disabled:opacity-100 ${compact ? 'btn-icon' : ''} ${item.cheered ? 'text-ink' : ''}`}
                   >
                     <Heart
                       className="size-4"
@@ -68,7 +81,7 @@ export function FriendFeed({ feed, friends, today, myName, onCheer }: Props) {
                       fill={item.cheered ? 'currentColor' : 'none'}
                       aria-hidden="true"
                     />
-                    {item.cheered ? 'Cheered' : 'Cheer'}
+                    {!compact && (item.cheered ? 'Cheered' : 'Cheer')}
                   </button>
                 )}
               </li>

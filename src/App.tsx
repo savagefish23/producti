@@ -1,19 +1,22 @@
-import { ListChecks, Users } from 'lucide-react'
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { AddHabitModal } from './components/AddHabitModal'
 import { DevPanel } from './components/DevPanel'
 import { FriendFeed } from './components/FriendFeed'
+import { HabitStats } from './components/HabitStats'
 import { HappeningNow } from './components/HappeningNow'
-import { Header } from './components/Header'
 import { Leaderboard, type LeaderboardEntry } from './components/Leaderboard'
 import { MyHabits } from './components/MyHabits'
+import { Overview, PageHeader, StatusControl } from './components/Overview'
+import { MobileBars, Sidebar } from './components/Sidebar'
+import type { Page } from './components/nav'
+import { WeeklyChart } from './components/WeeklyChart'
 import { Legal } from './components/Legal'
 import { SignIn } from './components/SignIn'
 import { Toasts, type Toast } from './components/Toasts'
 import { isHabitIcon } from './components/icons'
-import { useHashRoute } from './hooks/useHashRoute'
+import { navigate, useHashRoute } from './hooks/useHashRoute'
 import { useToday } from './hooks/useToday'
-import { addDays, diffDays, localTime, localToday } from './lib/dates'
+import { addDays, diffDays, formatDay, localTime, localToday } from './lib/dates'
 import {
   activeDayStreak,
   dayProgress,
@@ -38,31 +41,35 @@ function initState(): AppState {
   return createSeed(localToday(), localTime(), prefersDark ? 'dark' : 'light')
 }
 
-type Tab = 'habits' | 'friends'
+const ROUTE_PAGE: Record<string, Page> = { '/': 'today', '/friends': 'friends', '/stats': 'stats' }
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, undefined, initState)
   const [picked, setPicked] = useState<ISODate | null>(null)
-  const [tab, setTab] = useState<Tab>('habits')
   const [adding, setAdding] = useState(false)
   const [devOpen, setDevOpen] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
-  const [unseen, setUnseen] = useState(0)
+  // Friend replies received, and how many of them the user has seen.
+  const [replies, setReplies] = useState(0)
+  const [seenReplies, setSeenReplies] = useState(0)
 
   // "Today" is the real local day plus any dev time-travel offset.
   const realToday = useToday()
   const route = useHashRoute()
+  const page: Page = Object.hasOwn(ROUTE_PAGE, route) ? ROUTE_PAGE[route] : 'today'
   const today = addDays(realToday, state.dayOffset)
   // The strip shows the last seven days; anything outside falls back to today.
   const selected = picked && picked <= today && diffDays(picked, today) < 7 ? picked : today
 
   // Latest state for scripted replies that fire from timers.
   const stateRef = useRef(state)
-  const tabRef = useRef(tab)
   useEffect(() => {
     stateRef.current = state
-    tabRef.current = tab
   })
+
+  // Being on Friends marks every reply as seen (adjusting state during render).
+  if (page === 'friends' && seenReplies !== replies) setSeenReplies(replies)
+  const unseen = page === 'friends' ? 0 : replies - seenReplies
 
   useEffect(() => saveState(state), [state])
 
@@ -123,7 +130,7 @@ export default function App() {
     const ms = state.fastReplies ? randomBetween(2000, 3500) : randomBetween(minSec, maxSec) * 1000
     later(ms, () => {
       run()
-      if (tabRef.current !== 'friends') setUnseen((n) => n + 1)
+      setReplies((n) => n + 1)
     })
   }
 
@@ -185,11 +192,6 @@ export default function App() {
     setPicked(null)
   }
 
-  const showTab = (next: Tab) => {
-    setTab(next)
-    if (next === 'friends') setUnseen(0)
-  }
-
   // ── Derived view data (all from pure functions in lib/) ────────────────
   const week = recentProgress(state.habits, today)
   const entries: LeaderboardEntry[] = [
@@ -209,33 +211,14 @@ export default function App() {
     })),
   ]
 
-  const tabButton = (value: Tab, label: string, Icon: typeof Users) => (
-    <button
-      type="button"
-      role="tab"
-      id={`tab-${value}`}
-      aria-selected={tab === value}
-      aria-controls={`panel-${value}`}
-      onClick={() => showTab(value)}
-      className={`focus-visible:bg-raised relative flex h-14 flex-1 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors duration-150 ease-smooth outline-none ${
-        tab === value ? 'text-ink' : 'text-muted'
-      }`}
-    >
-      <span className="relative">
-        <Icon className="size-5" strokeWidth={1.5} aria-hidden="true" />
-        {value === 'friends' && unseen > 0 && (
-          <span className="mono bg-accent text-on-accent absolute -top-1 -right-3 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[11px]">
-            {unseen}
-            <span className="sr-only"> new</span>
-          </span>
-        )}
-      </span>
-      {label}
-    </button>
-  )
-
   const toggleTheme = () =>
     dispatch({ type: 'setTheme', theme: state.theme === 'dark' ? 'light' : 'dark' })
+
+  const signOut = () => {
+    dispatch({ type: 'signOut', date: realToday, time: localTime() })
+    setDevOpen(false)
+    navigate('/')
+  }
 
   if (route === '/privacy' || route === '/terms') {
     return <Legal page={route === '/privacy' ? 'privacy' : 'terms'} />
@@ -250,92 +233,108 @@ export default function App() {
         onSignIn={(name, sampleData) => {
           dispatch({ type: 'signIn', name, sampleData, date: today, time: localTime() })
           setPicked(null)
-          setTab('habits')
+          navigate('/')
         }}
       />
     )
   }
 
+  const feed = (props: { title?: string; limit?: number; viewAllHref?: string; compact?: boolean }) => (
+    <FriendFeed
+      feed={state.feed}
+      friends={state.friends}
+      today={today}
+      myName={state.profile.name}
+      onCheer={handleCheer}
+      {...props}
+    />
+  )
+
   return (
-    <div className="min-h-dvh pb-24 lg:pb-16">
-      <Header
+    <div className="min-h-dvh lg:pl-64">
+      <Sidebar
+        page={page}
+        unseen={unseen}
         name={state.profile.name}
-        today={today}
-        xp={xp}
-        rank={rankFor(xp)}
-        progress={dayProgress(state.habits, today)}
-        status={state.profile.status}
-        onStatus={handleStatus}
+        theme={state.theme}
+        dayOffset={state.dayOffset}
+        onToggleTheme={toggleTheme}
+        onSignOut={signOut}
+      />
+      <MobileBars
+        page={page}
+        unseen={unseen}
+        name={state.profile.name}
         theme={state.theme}
         onToggleTheme={toggleTheme}
-        onSignOut={() => {
-          dispatch({ type: 'signOut', date: realToday, time: localTime() })
-          setDevOpen(false)
-        }}
-        dayOffset={state.dayOffset}
+        onSignOut={signOut}
       />
 
-      <main className="animate-enter mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 pt-8 sm:px-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-        <section
-          id="panel-habits"
-          aria-label="My habits"
-          className={`min-w-0 ${tab === 'habits' ? '' : 'hidden lg:block'}`}
-        >
-          <MyHabits
-            habits={state.habits}
-            freezes={state.freezes}
-            today={today}
-            selected={selected}
-            week={week}
-            onSelect={setPicked}
-            onToggle={handleToggle}
-            onArchive={(habit) =>
-              dispatch({ type: 'archiveHabit', habitId: habit.id, date: today, time: localTime() })
-            }
-            onOpenAdd={() => setAdding(true)}
-            onQuickAdd={handleAdd}
-          />
-        </section>
+      <main key={page} className="animate-enter mx-auto max-w-6xl px-4 pt-8 pb-28 sm:px-8 lg:pt-10 lg:pb-16">
+        {page === 'today' && (
+          <div className="space-y-8">
+            <PageHeader title="Today" subtitle={formatDay(today)}>
+              <StatusControl status={state.profile.status} onStatus={handleStatus} />
+            </PageHeader>
+            <Overview xp={xp} rank={rankFor(xp)} progress={dayProgress(state.habits, today)} />
+            <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+              <MyHabits
+                habits={state.habits}
+                freezes={state.freezes}
+                today={today}
+                selected={selected}
+                week={week}
+                onSelect={setPicked}
+                onToggle={handleToggle}
+                onArchive={(habit) =>
+                  dispatch({ type: 'archiveHabit', habitId: habit.id, date: today, time: localTime() })
+                }
+                onOpenAdd={() => setAdding(true)}
+                onQuickAdd={handleAdd}
+              />
+              <div className="hidden xl:block">
+                {feed({ title: 'Friends today', limit: 6, viewAllHref: '#/friends', compact: true })}
+              </div>
+            </div>
+          </div>
+        )}
 
-        <section
-          id="panel-friends"
-          aria-label="Friends"
-          className={`min-w-0 space-y-6 ${tab === 'friends' ? '' : 'hidden lg:block'}`}
-        >
-          <HappeningNow
-            friends={state.friends}
-            today={today}
-            myName={state.profile.name}
-            myStatus={state.profile.status}
-            nudged={(friendId) => hasNudged(state, friendId, today)}
-            onNudge={handleNudge}
-          />
-          <Leaderboard entries={entries} />
-          <FriendFeed
-            feed={state.feed}
-            friends={state.friends}
-            today={today}
-            myName={state.profile.name}
-            onCheer={handleCheer}
-          />
-        </section>
+        {page === 'friends' && (
+          <div className="space-y-8">
+            <PageHeader title="Friends" subtitle="This week, with simulated friends" />
+            <HappeningNow
+              friends={state.friends}
+              today={today}
+              myName={state.profile.name}
+              myStatus={state.profile.status}
+              nudged={(friendId) => hasNudged(state, friendId, today)}
+              onNudge={handleNudge}
+            />
+            <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+              {feed({})}
+              <Leaderboard entries={entries} />
+            </div>
+          </div>
+        )}
+
+        {page === 'stats' && (
+          <div className="space-y-8">
+            <PageHeader title="Stats" subtitle="How your habits are going" />
+            <WeeklyChart days={week} today={today} selected={selected} onSelect={setPicked} />
+            <HabitStats habits={state.habits} freezes={state.freezes} today={today} />
+          </div>
+        )}
+
+        <footer className="text-muted mt-16 flex gap-4 text-xs">
+          <span>Producti, a demo</span>
+          <a href="#/privacy" className="hover:text-ink underline-offset-2 hover:underline">
+            Privacy
+          </a>
+          <a href="#/terms" className="hover:text-ink underline-offset-2 hover:underline">
+            Terms
+          </a>
+        </footer>
       </main>
-
-      <footer className="text-muted mx-auto flex max-w-6xl gap-4 px-4 pt-12 text-xs sm:px-6">
-        <span>Producti, a demo</span>
-        <a href="#/privacy" className="hover:text-ink underline-offset-2 hover:underline">Privacy</a>
-        <a href="#/terms" className="hover:text-ink underline-offset-2 hover:underline">Terms</a>
-      </footer>
-
-      {/* Mobile tab bar */}
-      <nav
-        role="tablist"
-        aria-label="Sections"
-        className="border-line bg-surface fixed inset-x-0 bottom-0 z-30 flex border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
-      >
-        {tabButton('habits', 'My habits', ListChecks)}
-        {tabButton('friends', 'Friends', Users)}
-      </nav>
 
       {adding && <AddHabitModal onAdd={handleAdd} onClose={() => setAdding(false)} />}
 

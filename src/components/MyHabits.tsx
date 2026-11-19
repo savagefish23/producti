@@ -6,7 +6,6 @@ import { freezeUsedInWeek, isScheduled } from '../lib/streaks'
 import type { FreezeUse, Habit, ISODate } from '../types'
 import { DayStrip } from './DayStrip'
 import { HabitCard } from './HabitCard'
-import { WeeklyChart } from './WeeklyChart'
 
 interface Props {
   habits: Habit[]
@@ -161,7 +160,6 @@ export function MyHabits({
         </div>
       )}
 
-      <WeeklyChart days={week} today={today} selected={selected} onSelect={onSelect} />
     </div>
   )
 }

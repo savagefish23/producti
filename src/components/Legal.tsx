@@ -1,6 +1,6 @@
 import { ArrowLeft } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { Logo } from './Logo'
+import { Wordmark } from './Logo'
 
 export type LegalPage = 'privacy' | 'terms'
 
@@ -12,8 +12,7 @@ export function Legal({ page }: { page: LegalPage }) {
     <div className="min-h-dvh">
       <header className="border-line bg-surface border-b">
         <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4 sm:px-6">
-          <Logo />
-          <span className="text-[17px] font-semibold">Producti</span>
+          <Wordmark size={22} />
           <a href="#/" className="btn btn-ghost ml-auto">
             <ArrowLeft className="size-4" strokeWidth={1.5} aria-hidden="true" />
             Back to app
