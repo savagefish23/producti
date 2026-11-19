@@ -65,103 +65,117 @@ function Privacy() {
 
       <h2>Summary</h2>
       <ul>
-        <li>Producti has no server-side database and no accounts on a server.</li>
-        <li>Everything you enter is stored only on your own device.</li>
-        <li>We do not collect, sell or share your personal information.</li>
-        <li>There are no ads, analytics or tracking.</li>
+        <li>If you create an account, your profile and habits are stored securely so they sync between devices.</li>
+        <li>Your email is used only to sign you in and to reset your password. Other users never see it.</li>
+        <li>We do not sell or share your personal information, and there are no ads, analytics or tracking.</li>
+        <li>You can delete your account and all its data at any time, from your profile.</li>
       </ul>
 
       <h2>Who we are</h2>
       <p>
-        Producti is an independent project. For any question about this policy or your data, contact
-        us through the project's{' '}
+        Producti is an independent project. For any question about this policy or your data, contact us
+        through the project's{' '}
         <a href={CONTACT_URL} className="text-accent-text underline underline-offset-2">
           public issue tracker on GitHub
         </a>
         .
       </p>
 
-      <h2>Information you enter</h2>
-      <p>When you create a profile and use the app, you enter:</p>
+      <h2>Information we collect</h2>
+      <p>When you create an account:</p>
       <ul>
-        <li>your full name, a username and an email address;</li>
-        <li>
-          optionally, a profile picture: either an avatar you build in the app, or a photo you upload,
-          which is cropped and shrunk on your device before it is saved;
-        </li>
-        <li>your habits, check-ins and status;</li>
-        <li>settings such as light or dark mode and whether notifications are on.</li>
+        <li>your email address and a password (the password is stored only as a secure hash; we never see it);</li>
+        <li>your full name and a username.</li>
       </ul>
-      <p>
-        No password is ever asked for. Your email address is not used for anything: nothing is emailed
-        to you, and it is not checked or verified.
-      </p>
+      <p>When you use the app:</p>
+      <ul>
+        <li>your habits, check-ins, streaks, status and settings;</li>
+        <li>
+          optionally, a profile picture: an avatar you build in the app, or a photo you upload, which is
+          cropped and shrunk on your device before it is saved.
+        </li>
+      </ul>
+
+      <h2>How it is used</h2>
+      <ul>
+        <li>To run your account: signing in, keeping your data in sync and resetting your password.</li>
+        <li>To show your habits, streaks, XP, rank and stats.</li>
+        <li>
+          Your full name and username may be visible to other signed-in users so friends can find you. Your
+          email, habits and history are not.
+        </li>
+      </ul>
+      <p>We do not use your information for advertising or profiling, and we do not sell it.</p>
 
       <h2>Where it is stored</h2>
       <p>
-        All of this is saved in your browser's local storage on your device. It is never sent to us or
-        to anyone else, because Producti has no server to send it to. We cannot see, access or recover
-        it.
+        Accounts and synced data are stored with <strong>Supabase</strong>, our database and
+        authentication provider. Database rules ensure each user can read and change only their own data.
+        A copy is also kept in your browser so the app works offline.
+      </p>
+      <p>
+        If you use <strong>Explore with sample data</strong> without an account, everything stays in your
+        browser only and is never sent to us.
       </p>
 
-      <h2>How it is used</h2>
+      <h2>Emails we send</h2>
       <p>
-        Your information is used only on your device, to show your habits, streaks, XP, rank and stats.
-        It is not used for advertising or profiling.
-      </p>
-
-      <h2>Sharing</h2>
-      <p>
-        We do not share your information with anyone. The friends shown in the app are simulated on
-        your device; they are not real people, and nothing you do is shared with them or with others.
+        Only account emails, sent by Supabase: a link to confirm your address when you sign up, and a link
+        to reset your password when you ask for one. No newsletters or marketing.
       </p>
 
       <h2>Notifications</h2>
       <p>
         If you turn notifications on, your browser or phone asks for permission and then shows a
-        notification when a simulated friend reacts while Producti is in the background. These
-        notifications are created on your device; no push service is used. You can turn them off in the
-        app or in your device settings at any time.
+        notification when a friend reacts while Producti is in the background. They are created on your
+        device; no push service is used. You can turn them off in the app or your device settings.
       </p>
 
-      <h2>Third-party services</h2>
+      <h2>Sharing and service providers</h2>
       <ul>
         <li>
-          <strong>Vercel</strong> hosts the app. Like any web host, it may log technical request data
-          such as your IP address to deliver and protect the service.
+          <strong>Supabase</strong> stores account data and sends account emails on our behalf.
         </li>
         <li>
-          <strong>Google Fonts</strong> supplies the typefaces. Your browser requests them from Google,
-          which receives your IP address.
+          <strong>Vercel</strong> hosts the app and may log technical request data, such as your IP address,
+          to deliver and protect the service.
+        </li>
+        <li>
+          <strong>Google Fonts</strong> supplies the typefaces; your browser requests them from Google, which
+          receives your IP address.
         </li>
       </ul>
-      <p>Producti sets no cookies.</p>
+      <p>We share information with no one else, except where the law requires it. Producti sets no tracking cookies.</p>
 
       <h2>Keeping and deleting your data</h2>
       <p>
-        Your data stays on your device until you delete it. To delete everything, choose{' '}
-        <strong>Sign out</strong> in the app, or clear the site data for Producti in your browser or
-        uninstall the app. Deletion is immediate and permanent.
+        We keep your account data until you delete it. To delete your account and everything in it, go to{' '}
+        <strong>Profile → Delete account</strong>. Deletion is immediate and permanent. Signing out removes
+        the copy stored in your browser.
       </p>
 
       <h2>Children</h2>
       <p>
-        Producti is not directed at children under 13, and we do not knowingly collect information from
-        them. Because no information leaves your device, none is held by us.
+        Producti is not directed at children under 13, and we do not knowingly collect information from them.
+        If you believe a child has created an account, contact us and we will delete it.
       </p>
 
       <h2>Security</h2>
       <p>
-        The app is served over HTTPS with a strict Content Security Policy, and data loaded from storage
-        is validated before use. Anyone with access to your device or browser could read what is stored
-        there, so use your device's own lock and protection.
+        The app is served over HTTPS with a strict Content Security Policy. Passwords are hashed, sign-in
+        attempts and account emails are rate-limited, and every database table uses row-level security so
+        users can access only their own data. No method of storage is perfectly secure, so please use a
+        strong, unique password.
+      </p>
+
+      <h2>Your rights</h2>
+      <p>
+        You can view and edit your profile in the app, delete your account at any time, and contact us to
+        ask what we hold about you.
       </p>
 
       <h2>Changes to this policy</h2>
-      <p>
-        If Producti starts storing information on a server, for example to offer real accounts, this
-        policy will be updated before that change goes live, and the date at the top will change.
-      </p>
+      <p>If this policy changes, the date at the top will change, and significant changes will be shown in the app.</p>
     </Article>
   )
 }
@@ -173,16 +187,23 @@ function Terms() {
         By using Producti you agree to these terms. If you do not agree, please do not use the app.
       </p>
 
-      <h2>A demo, provided as is</h2>
+      <h2>The service</h2>
       <p>
-        Producti is a portfolio project. It is provided free of charge, as is, without warranties of
-        any kind. Features may change or stop working at any time.
+        Producti is an independent project, provided free of charge and as is, without warranties of any
+        kind. Features may change or stop working at any time.
+      </p>
+
+      <h2>Your account</h2>
+      <p>
+        You need to be at least 13 to create an account. Keep your password safe; you are responsible for
+        activity on your account. Choose a username that doesn't impersonate anyone or offend others; we may
+        remove accounts that do. You can delete your account at any time from your profile.
       </p>
 
       <h2>Your data</h2>
       <p>
-        Your data lives only on your device. We cannot recover it if it is lost, for example when
-        browser storage is cleared. You are responsible for anything you enter into the app.
+        Your habits and history belong to you. How we handle them is described in the privacy policy. The
+        sample-data demo lives only in your browser and cannot be recovered if browser storage is cleared.
       </p>
 
       <h2>Not advice</h2>
@@ -192,7 +213,10 @@ function Terms() {
       </p>
 
       <h2>Acceptable use</h2>
-      <p>Do not try to disrupt the site, its hosting, or other people's use of it.</p>
+      <p>
+        Do not try to disrupt the service, get around its security, access other people's accounts or data,
+        or automate sign-ups.
+      </p>
 
       <h2>Liability</h2>
       <p>

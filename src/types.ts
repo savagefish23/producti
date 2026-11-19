@@ -79,8 +79,10 @@ export interface FeedItem {
 }
 
 export interface AppState {
-  /** False shows the sign-in screen. Local-only: there is no account server. */
+  /** False shows the sign-in screen. */
   signedIn: boolean
+  /** Set when this data belongs to a Supabase account (synced); absent for the local demo. */
+  cloudUserId?: string
   profile: {
     /** Full name, shown in the app. */
     name: string

@@ -24,8 +24,13 @@ interface Props {
   xp: number
   bestStreak: number
   checkins: number
-  onSave: (fields: { fullName: string; username: string; email: string }) => void
+  /** Returns an error message, or null when saved. */
+  onSave: (fields: { fullName: string; username: string; email: string }) => Promise<string | null>
   onAvatar: (avatar: ProfileAvatar) => void
+  /** Signed in with a real account: the email is the login and can't be edited here. */
+  cloud?: boolean
+  /** Only for real accounts. Returns an error message, or null when deleted. */
+  onDeleteAccount?: () => Promise<string | null>
 }
 
 type Mode = ProfileAvatar['kind']
@@ -62,7 +67,7 @@ async function photoToDataUrl(file: File): Promise<string> {
   throw new Error('Could not shrink that image enough')
 }
 
-export function ProfilePage({ profile, rank, xp, bestStreak, checkins, onSave, onAvatar }: Props) {
+export function ProfilePage({ profile, rank, xp, bestStreak, checkins, onSave, onAvatar, cloud = false, onDeleteAccount }: Props) {
   return (
     <div className="space-y-8">
       <PageHeader title="Profile" subtitle="How you appear in Producti" />
@@ -88,7 +93,10 @@ export function ProfilePage({ profile, rank, xp, bestStreak, checkins, onSave, o
 
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <AvatarEditor name={profile.name} current={profile.avatar} onAvatar={onAvatar} />
-        <DetailsForm profile={profile} onSave={onSave} />
+        <div className="space-y-8">
+          <DetailsForm profile={profile} onSave={onSave} cloud={cloud} />
+          {onDeleteAccount && <DeleteAccount onDelete={onDeleteAccount} />}
+        </div>
       </div>
     </div>
   )
@@ -239,21 +247,27 @@ function AvatarEditor({ name, current, onAvatar }: { name: string; current: Prof
   )
 }
 
-function DetailsForm({ profile, onSave }: { profile: AppState['profile']; onSave: Props['onSave'] }) {
+function DetailsForm({ profile, onSave, cloud }: { profile: AppState['profile']; onSave: Props['onSave']; cloud: boolean }) {
   const [fullName, setFullName] = useState(profile.name)
   const [username, setUsername] = useState(profile.username)
   const [email, setEmail] = useState(profile.email)
   const [submitted, setSubmitted] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
   const fields = { fullName, username, email, notifications: false }
   const errors: FieldErrors = submitted ? validateSignIn(fields) : {}
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault()
     setSubmitted(true)
+    setServerError(null)
     if (Object.keys(validateSignIn(fields)).length > 0) return
-    onSave({ fullName, username, email })
-    setSaved(true)
+    setBusy(true)
+    const problem = await onSave({ fullName, username, email })
+    setBusy(false)
+    if (problem) setServerError(problem)
+    else setSaved(true)
   }
 
   const input = (invalid: boolean) =>
@@ -279,17 +293,72 @@ function DetailsForm({ profile, onSave }: { profile: AppState['profile']; onSave
         </label>
         <label className="block text-sm font-medium">
           Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={PROFILE_LIMITS.email} autoCapitalize="none" spellCheck={false} aria-invalid={!!errors.email} className={input(!!errors.email)} />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} readOnly={cloud} maxLength={PROFILE_LIMITS.email} autoCapitalize="none" spellCheck={false} aria-invalid={!!errors.email} className={`${input(!!errors.email)} ${cloud ? 'bg-raised text-ink-2 cursor-not-allowed' : ''}`} />
+          {cloud && <span className="text-muted mt-1 block text-xs font-normal">Your sign-in email. It is never shown to other users.</span>}
           {errors.email && <span role="alert" className="text-negative mt-1 block text-[13px] font-normal">{errors.email}</span>}
         </label>
         <div className="flex items-center gap-3">
-          <button type="submit" className="btn btn-primary">
-            Save changes
+          <button type="submit" disabled={busy} className="btn btn-primary">
+            {busy ? 'Saving…' : 'Save changes'}
           </button>
           {saved && <span className="text-accent-text text-[13px]" role="status">Saved</span>}
         </div>
-        <p className="text-muted text-xs">Stored only in this browser.</p>
+        {serverError && (
+          <p role="alert" className="text-negative text-[13px]">
+            {serverError}
+          </p>
+        )}
+        <p className="text-muted text-xs">{cloud ? 'Synced to your account.' : 'Stored only in this browser.'}</p>
       </form>
+    </section>
+  )
+}
+
+/** Permanently delete a real account. Two steps, with the word typed out. */
+function DeleteAccount({ onDelete }: { onDelete: () => Promise<string | null> }) {
+  const [open, setOpen] = useState(false)
+  const [typed, setTyped] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  return (
+    <section className="card border-negative/30 p-5 sm:p-6" aria-labelledby="delete-title">
+      <h2 id="delete-title" className="text-base font-semibold">
+        Delete account
+      </h2>
+      <p className="text-ink-2 mt-1 text-[13px]">
+        Permanently deletes your account, profile, habits and history. This can't be undone.
+      </p>
+      {!open ? (
+        <button type="button" onClick={() => setOpen(true)} className="btn btn-secondary text-negative mt-4">
+          Delete my account
+        </button>
+      ) : (
+        <form
+          className="mt-4 space-y-3"
+          onSubmit={async (e) => {
+            e.preventDefault()
+            if (typed !== 'DELETE') return
+            setBusy(true)
+            setError(await onDelete())
+            setBusy(false)
+          }}
+        >
+          <label className="block text-sm">
+            Type <span className="mono font-medium">DELETE</span> to confirm
+            <input value={typed} onChange={(e) => setTyped(e.target.value)} autoFocus className="border-line-strong bg-surface mt-1.5 h-10 w-full rounded-lg border px-3 text-sm outline-none" />
+          </label>
+          {error && <p role="alert" className="text-negative text-[13px]">{error}</p>}
+          <div className="flex gap-2">
+            <button type="submit" disabled={typed !== 'DELETE' || busy} className="btn bg-negative text-white">
+              {busy ? 'Deleting…' : 'Delete forever'}
+            </button>
+            <button type="button" onClick={() => { setOpen(false); setTyped('') }} className="btn btn-ghost">
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
     </section>
   )
 }

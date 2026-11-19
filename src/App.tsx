@@ -20,6 +20,11 @@ import { Toasts, type Toast } from './components/Toasts'
 import { isHabitIcon } from './components/icons'
 import { navigate, useHashRoute } from './hooks/useHashRoute'
 import { useToday } from './hooks/useToday'
+import { useAuth } from './hooks/useAuth'
+import { ResetPassword, Splash } from './components/AuthScreens'
+import { deleteCloudAccount, loadCloudState, saveCloudState, updateCloudProfile } from './lib/cloud'
+import { cloudEnabled, supabase } from './lib/supabase'
+import { sanitizeState } from './lib/validate'
 import { addDays, diffDays, formatDay, lastDays, localTime, localToday } from './lib/dates'
 import {
   activeDayStreak,
@@ -36,7 +41,7 @@ import { chance, randomBetween, randomInt } from './lib/random'
 import { hasNudged, reducer, type NewHabit } from './lib/reducer'
 import { createSeed } from './lib/seed'
 import { friendStreak, friendWeeklyXp } from './lib/social'
-import { loadState, saveState } from './lib/storage'
+import { loadState, migrate, saveState } from './lib/storage'
 import { currentStreak, isCompleted, longestStreak } from './lib/streaks'
 import { notify, requestNotifications } from './notifications'
 import type { AppState, FeedItem, Friend, Habit, ISODate, StatusKind } from './types'
@@ -86,6 +91,58 @@ export default function App() {
 
   useEffect(() => saveState(state), [state])
 
+  // ── Accounts (Supabase) ────────────────────────────────────────────────
+  const auth = useAuth()
+  const userId = auth.session?.user.id ?? null
+  const [cloudError, setCloudError] = useState<string | null>(null)
+  const [cloudAttempt, setCloudAttempt] = useState(0)
+  const cloudReady = userId !== null && state.cloudUserId === userId
+
+  // Signed in: load this account's data from Supabase (or start it fresh).
+  useEffect(() => {
+    const user = auth.session?.user
+    if (!user || stateRef.current.cloudUserId === user.id) return
+    let cancelled = false
+    loadCloudState(user.id)
+      .then((envelope) => {
+        if (cancelled) return
+        const day = addDays(localToday(), 0)
+        const loaded = envelope ? sanitizeState(migrate(envelope), day, isHabitIcon) : null
+        const meta = user.user_metadata as { full_name?: string; username?: string; notifications?: boolean }
+        const base: AppState = loaded ?? {
+          ...createSeed(day, localTime(), stateRef.current.theme),
+          habits: [],
+          freezes: [],
+        }
+        const next: AppState = {
+          ...base,
+          signedIn: true,
+          cloudUserId: user.id,
+          profile: {
+            ...base.profile,
+            ...(loaded ? {} : { name: meta.full_name ?? 'New user', username: meta.username ?? 'you', notifications: meta.notifications === true }),
+            email: user.email ?? base.profile.email,
+          },
+        }
+        setCloudError(null)
+        dispatch({ type: 'hydrate', state: next })
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setCloudError(e instanceof Error ? e.message : 'Unknown error')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [auth.session?.user, cloudAttempt])
+
+  // Signed out elsewhere or session expired: don't leave the account's data on screen.
+  useEffect(() => {
+    if (cloudEnabled && auth.ready && !userId && state.cloudUserId) {
+      dispatch({ type: 'signOut', date: localToday(), time: localTime() })
+    }
+  }, [auth.ready, userId, state.cloudUserId])
+
+
   useEffect(() => {
     document.documentElement.classList.toggle('dark', state.theme === 'dark')
   }, [state.theme])
@@ -131,6 +188,16 @@ export default function App() {
     },
     [later],
   )
+
+  // Save changes to Supabase, batched so quick toggles send one write. A
+  // failed save keeps the data on this device; the next change retries.
+  useEffect(() => {
+    if (!cloudReady || !userId) return
+    const id = window.setTimeout(() => {
+      saveCloudState(userId, state).catch(() => toast('Couldn’t sync. Changes are kept on this device and will retry.'))
+    }, 800)
+    return () => window.clearTimeout(id)
+  }, [state, cloudReady, userId, toast])
 
   /** A friend reacted: in-app toast, plus a browser notification if turned on. */
   const friendNews = (text: string) => {
@@ -250,6 +317,7 @@ export default function App() {
   }
 
   const signOut = () => {
+    if (supabase && auth.session) void supabase.auth.signOut()
     dispatch({ type: 'signOut', date: realToday, time: localTime() })
     setDevOpen(false)
     navigate('/')
@@ -257,6 +325,30 @@ export default function App() {
 
   if (route === '/privacy' || route === '/terms') {
     return <Legal page={route === '/privacy' ? 'privacy' : 'terms'} />
+  }
+
+  if (cloudEnabled && !auth.ready) return <Splash message="Loading…" />
+
+  if (auth.recovering) {
+    return (
+      <ResetPassword
+        onDone={() => {
+          auth.clearRecovering()
+          toast('Password updated')
+        }}
+      />
+    )
+  }
+
+  if (userId && !cloudReady) {
+    return (
+      <Splash
+        message="Loading your habits…"
+        error={cloudError}
+        onRetry={() => setCloudAttempt((n) => n + 1)}
+        onSignOut={signOut}
+      />
+    )
   }
 
   if (!state.signedIn) {
@@ -389,10 +481,30 @@ export default function App() {
             xp={xp}
             bestStreak={bestEver}
             checkins={state.habits.reduce((n, h) => n + h.completions.length, 0)}
-            onSave={(fields) => {
-              dispatch({ type: 'updateProfile', fields })
+            cloud={cloudReady}
+            onSave={async (fields) => {
+              if (cloudReady && userId) {
+                const problem = await updateCloudProfile(userId, {
+                  username: fields.username.trim().replace(/^@+/, '').toLowerCase(),
+                  fullName: fields.fullName.trim(),
+                })
+                if (problem) return problem
+              }
+              dispatch({ type: 'updateProfile', fields: cloudReady ? { ...fields, email: state.profile.email } : fields })
               toast('Profile saved')
+              return null
             }}
+            onDeleteAccount={
+              cloudReady
+                ? async () => {
+                    const problem = await deleteCloudAccount()
+                    if (problem) return problem
+                    dispatch({ type: 'signOut', date: realToday, time: localTime() })
+                    navigate('/')
+                    return null
+                  }
+                : undefined
+            }
             onAvatar={(avatar) => {
               dispatch({ type: 'setAvatar', avatar })
               toast('Profile picture updated')

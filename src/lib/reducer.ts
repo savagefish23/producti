@@ -62,6 +62,7 @@ export type Action =
   | { type: 'setFastReplies'; on: boolean }
   | ({ type: 'signIn'; fields: SignInFields; sampleData: boolean } & Stamp)
   | { type: 'setNotifications'; on: boolean }
+  | { type: 'hydrate'; state: AppState }
   | { type: 'updateProfile'; fields: Omit<SignInFields, 'notifications'> }
   | { type: 'setAvatar'; avatar: ProfileAvatar }
   | ({ type: 'signOut' } & Stamp)
@@ -293,6 +294,11 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'setAvatar':
       // Same checks as loading from storage: a bad image falls back to initials.
       return { ...state, profile: { ...state.profile, avatar: sanitizeAvatar(action.avatar) } }
+
+    case 'hydrate':
+      // Replace everything with data loaded for a signed-in account. The
+      // caller has already migrated and sanitized it.
+      return action.state
 
     case 'setNotifications':
       return { ...state, profile: { ...state.profile, notifications: action.on } }

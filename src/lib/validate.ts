@@ -45,6 +45,7 @@ const ISO = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/
 /** Ids are ours: short and plain. Anything else is rejected. */
 const ID = /^[\w-]{1,64}$/
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const isISODate = (v: unknown): v is ISODate => typeof v === 'string' && ISO.test(v)
 
@@ -157,6 +158,7 @@ export function sanitizeState(
 
   return {
     signedIn: raw.signedIn === true,
+    ...(typeof raw.cloudUserId === 'string' && UUID.test(raw.cloudUserId) ? { cloudUserId: raw.cloudUserId } : {}),
     profile: {
       name: str(profile.name, PROFILE_LIMITS.fullName).trim() || 'Guest',
       username: (() => {
