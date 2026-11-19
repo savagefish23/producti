@@ -10,6 +10,7 @@ import {
   type ISODate,
   type Weekday,
 } from '../types'
+import { sanitizeAvatar } from './avatar'
 import { isValidEmail, isValidUsername, normalizeEmail, normalizeUsername, PROFILE_LIMITS } from './profile'
 
 /*
@@ -75,10 +76,21 @@ function habit(v: unknown, isIcon: (key: string) => boolean): Habit | null {
     icon,
     category: oneOf(v.category, CATEGORIES, 'Health'),
     schedule: schedule.sort(),
+    ...timeFields(v.time, v.duration),
     createdOn: v.createdOn,
     completions: [...new Set(list(v.completions, LIMITS.completionsPerHabit).filter(isISODate))],
     ...(isISODate(v.archivedOn) ? { archivedOn: v.archivedOn } : {}),
   }
+}
+
+const TIME_OF_DAY = /^([01]\d|2[0-3]):[0-5]\d$/
+export const DURATIONS = [5, 10, 15, 20, 30, 45, 60, 90, 120] as const
+
+/** Keep a habit's time only if it is a real "HH:mm"; duration defaults to 15. */
+export function timeFields(time: unknown, duration: unknown): { time?: string; duration?: number } {
+  if (typeof time !== 'string' || !TIME_OF_DAY.test(time)) return {}
+  const d = typeof duration === 'number' && (DURATIONS as readonly number[]).includes(duration) ? duration : 15
+  return { time, duration: d }
 }
 
 function freeze(v: unknown): FreezeUse | null {
@@ -156,6 +168,7 @@ export function sanitizeState(
         return isValidEmail(e) ? e : ''
       })(),
       notifications: profile.notifications === true,
+      avatar: sanitizeAvatar(profile.avatar),
       status: oneOf(profile.status, STATUSES, 'Idle'),
     },
     theme: raw.theme === 'dark' ? 'dark' : 'light',

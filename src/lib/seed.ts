@@ -63,22 +63,22 @@ const SEED_HABITS: SeedHabit[] = [
     rate: 0.85,
   },
   {
-    habit: { id: 'h2', title: 'Deep work block', icon: 'target', category: 'Focus', schedule: [1, 2, 3, 4, 5] },
+    habit: { id: 'h2', time: '09:00', duration: 90, title: 'Deep work block', icon: 'target', category: 'Focus', schedule: [1, 2, 3, 4, 5] },
     liveDays: 9,
     rate: 0.8,
   },
   {
-    habit: { id: 'h3', title: 'Read 20 pages', icon: 'book', category: 'Study', schedule: DAILY },
+    habit: { id: 'h3', time: '21:00', duration: 30, title: 'Read 20 pages', icon: 'book', category: 'Study', schedule: DAILY },
     liveDays: 28, // one gap at day −8, covered by a Streak Freeze
     rate: 1,
   },
   {
-    habit: { id: 'h4', title: 'Gym session', icon: 'dumbbell', category: 'Fitness', schedule: [1, 3, 5] },
+    habit: { id: 'h4', time: '18:00', duration: 60, title: 'Gym session', icon: 'dumbbell', category: 'Fitness', schedule: [1, 3, 5] },
     liveDays: 8,
     rate: 0.75,
   },
   {
-    habit: { id: 'h5', title: 'Meditate 10 min', icon: 'brain', category: 'Focus', schedule: DAILY },
+    habit: { id: 'h5', time: '07:00', duration: 10, title: 'Meditate 10 min', icon: 'brain', category: 'Focus', schedule: DAILY },
     liveDays: 3,
     rate: 0.7,
   },
@@ -118,7 +118,7 @@ export function createSeed(today: ISODate, time: string, theme: Theme = 'light')
 
   return {
     signedIn: false,
-    profile: { name: 'You', username: 'you', email: '', notifications: false, status: 'Idle' },
+    profile: { name: 'You', username: 'you', email: '', notifications: false, avatar: { kind: 'initials' }, status: 'Idle' },
     theme,
     habits,
     freezes: [{ habitId: 'h3', date: frozenDay, weekStart: startOfWeek(frozenDay) }],

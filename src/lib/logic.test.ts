@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AppState, FreezeUse, Habit, Weekday } from '../types'
 import { addDays, diffDays, lastDays, localToday, startOfWeek, weekdayOf } from './dates'
-import { activeDayStreak, checkinXp, completionXp, dayProgress, nextCheckinXp, rankFor, totalXp, weeklyXp, xpBetween } from './game'
+import { activeDayStreak, checkinXp, RANKS, completionXp, dayProgress, nextCheckinXp, rankFor, totalXp, weeklyXp, xpBetween } from './game'
 import { reducer } from './reducer'
 import { createSeed } from './seed'
 import { friendDayXp, friendStreak, friendWeeklyXp } from './social'
@@ -179,12 +179,31 @@ describe('xp and ranks', () => {
     expect(xpBetween([h], [], '2026-11-01', '2026-11-30')).toBe(21)
   })
 
-  it('maps XP to rank tiers', () => {
-    expect(rankFor(0).name).toBe('Bronze')
-    expect(rankFor(499).name).toBe('Bronze')
-    expect(rankFor(500)).toMatchObject({ name: 'Silver', next: 'Gold', xpToNext: 1300, progress: 0 })
-    expect(rankFor(1800).name).toBe('Gold')
-    expect(rankFor(99999)).toMatchObject({ name: 'Diamond', next: null, progress: 1 })
+  it('has 22 steps from Bronze I to Eternal', () => {
+    expect(RANKS).toHaveLength(22)
+    expect(RANKS.map((r) => r.name)).toEqual([
+      'Bronze I', 'Bronze II', 'Bronze III', 'Silver I', 'Silver II', 'Silver III',
+      'Gold I', 'Gold II', 'Gold III', 'Platinum I', 'Platinum II', 'Platinum III',
+      'Diamond I', 'Diamond II', 'Diamond III', 'Champion I', 'Champion II', 'Champion III',
+      'Overlord I', 'Overlord II', 'Overlord III', 'Eternal',
+    ])
+    // Each step takes longer than the last.
+    for (let i = 2; i < RANKS.length; i++) {
+      expect(RANKS[i].minXp - RANKS[i - 1].minXp).toBeGreaterThan(RANKS[i - 1].minXp - RANKS[i - 2].minXp)
+    }
+  })
+
+  it('maps XP to rank steps', () => {
+    expect(rankFor(0)).toMatchObject({ name: 'Bronze I', tier: 'Bronze', division: 1, step: 0 })
+    expect(rankFor(124).name).toBe('Bronze I')
+    expect(rankFor(125)).toMatchObject({ name: 'Bronze II', xpToNext: 175, progress: 0 })
+    expect(rankFor(525)).toMatchObject({ name: 'Silver I', tier: 'Silver', division: 1 })
+    expect(rankFor(1500).name).toBe('Gold I')
+    expect(rankFor(9900)).toMatchObject({ name: 'Overlord I', tier: 'Overlord' })
+    expect(rankFor(13125)).toMatchObject({ name: 'Eternal', division: null, next: null, progress: 1, xpToNext: 0 })
+    expect(rankFor(10 ** 9).name).toBe('Eternal')
+    expect(rankFor(Number.NaN).name).toBe('Bronze I')
+    expect(rankFor(-50).name).toBe('Bronze I')
   })
 
   it('computes daily progress from scheduled habits only', () => {
@@ -295,8 +314,8 @@ describe('seed', () => {
       expect(currentStreak(read, today, s.freezes)).toBe(27)
       expect(freezeAvailable(s.freezes, today)).toBe(true)
       const rank = rankFor(totalXp(s.habits, s.freezes))
-      expect(rank.name).toBe('Silver')
-      expect(rank.xpToNext).toBeLessThan(200)
+      expect(rank.name).toBe('Gold I')
+      expect(rank.xpToNext).toBeLessThan(400)
     }
   })
 })

@@ -11,6 +11,14 @@ export const CATEGORY_DOT: Record<Category, string> = {
   Fitness: 'bg-[#9a5a7a]',
 }
 
+/** The same hues as hex, for charts (SVG fills). */
+export const CATEGORY_HEX: Record<Category, string> = {
+  Health: '#5f8f62',
+  Focus: '#5f7aa6',
+  Study: '#b8892f',
+  Fitness: '#9a5a7a',
+}
+
 const NUMBER = new Intl.NumberFormat('en-US')
 
 /** One number format across the app: "2,515". */

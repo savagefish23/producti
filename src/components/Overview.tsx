@@ -1,16 +1,12 @@
-import { Crown, Gem, Medal, Shield, type LucideIcon } from 'lucide-react'
+import { Flame, Zap } from 'lucide-react'
 import type { ReactNode } from 'react'
-import type { DayProgress, RankInfo, RankName } from '../lib/game'
+import type { DayProgress, RankInfo } from '../lib/game'
+import { WEEKDAY_SHORT, weekdayOf } from '../lib/dates'
+import type { ISODate } from '../types'
+import { Gauge } from './Gauge'
+import { RankEmblem } from './RankEmblem'
 import { STATUS_LABEL, STATUSES, type StatusKind } from '../types'
 import { STATUS_ICONS } from './icons'
-import { formatNumber } from './styles'
-
-const RANK_ICON: Record<RankName, LucideIcon> = {
-  Bronze: Shield,
-  Silver: Medal,
-  Gold: Crown,
-  Diamond: Gem,
-}
 
 /** Page header: title on the left, actions on the right. */
 export function PageHeader({ title, subtitle, children }: { title: string; subtitle?: string; children?: ReactNode }) {
@@ -53,69 +49,93 @@ export function StatusControl({ status, onStatus }: { status: StatusKind; onStat
   )
 }
 
-/** The three headline figures: XP, rank, today's progress. */
-export function Overview({ xp, rank, progress }: { xp: number; rank: RankInfo; progress: DayProgress }) {
-  const RankIcon = RANK_ICON[rank.name]
+interface OverviewProps {
+  xp: number
+  rank: RankInfo
+  progress: DayProgress
+  bestStreak: number
+  /** The last seven days, oldest first, with XP earned on each. */
+  week: { date: ISODate; xp: number }[]
+  today: ISODate
+}
+
+/** Today's hero row: rank, today's score and XP over the last week. */
+export function Overview({ xp, rank, progress, bestStreak, week, today }: OverviewProps) {
+  const score = progress.due === 0 ? null : Math.round(progress.ratio * 100)
+  const maxXp = Math.max(1, ...week.map((d) => d.xp))
+  const weekTotal = week.reduce((s, d) => s + d.xp, 0)
+
   return (
-    <dl className="card divide-line grid grid-cols-3 divide-x">
-      <Stat label="Total XP" value={formatNumber(xp)} mono>
-        All time
-      </Stat>
-      <Stat
-        label="Rank"
-        value={
-          <span className="inline-flex items-center gap-2">
-            <RankIcon className="text-ink-2 hidden size-5 sm:block" strokeWidth={1.75} aria-hidden="true" />
-            {rank.name}
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.9fr)_minmax(0,1.25fr)]">
+      {/* Rank */}
+      <section className="card relative overflow-hidden p-5" aria-labelledby="rank-card-title">
+        <h2 id="rank-card-title" className="text-ink-2 text-[13px]">
+          Rank
+        </h2>
+        <div className="mt-2 flex items-center gap-4">
+          <RankEmblem rank={rank} size={76} className="shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-2xl font-semibold tracking-[-0.02em]">{rank.name}</p>
+            <p className="mono text-ink-2 flex items-center gap-1 text-sm">
+              <Zap className="text-accent-text size-3.5" strokeWidth={2} aria-hidden="true" />
+              {xp.toLocaleString('en-US')} XP
+            </p>
+          </div>
+        </div>
+        <div
+          className="bg-raised mt-4 h-2 overflow-hidden rounded-full"
+          role="progressbar"
+          aria-label={rank.next ? `Progress to ${rank.next.name}` : 'Top rank'}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(rank.progress * 100)}
+        >
+          <div
+            className="bg-accent h-full origin-left rounded-full transition-transform duration-500 ease-smooth"
+            style={{ transform: `scaleX(${rank.progress})` }}
+          />
+        </div>
+        <div className="mono text-muted mt-2 flex justify-between text-xs">
+          <span>{rank.next ? `${rank.xpToNext.toLocaleString('en-US')} XP to ${rank.next.name}` : 'Top rank reached'}</span>
+          <span className="flex items-center gap-1">
+            <Flame className="text-accent-text size-3.5" strokeWidth={2} aria-hidden="true" />
+            best {bestStreak}d
           </span>
-        }
-      >
-        <Meter value={rank.progress} label={rank.next ? `Progress to ${rank.next}` : 'Rank progress'} />
-        <span className="mono">
-          {rank.next ? (
-            <>
-              {formatNumber(rank.xpToNext)} XP<span className="hidden sm:inline"> to {rank.next}</span>
-            </>
-          ) : (
-            'Top rank'
-          )}
-        </span>
-      </Stat>
-      <Stat label="Done today" value={progress.due === 0 ? '0/0' : `${progress.done}/${progress.due}`} mono>
-        <Meter value={progress.ratio} label="Today's habits done" accent />
-        <span>{progress.due === 0 ? 'Rest day' : 'Habits'}</span>
-      </Stat>
-    </dl>
-  )
-}
+        </div>
+      </section>
 
-function Stat({ label, value, mono = false, children }: { label: string; value: ReactNode; mono?: boolean; children: ReactNode }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1 px-4 py-4 sm:px-5">
-      <dt className="text-ink-2 text-[13px]">{label}</dt>
-      <dd className={`truncate text-xl leading-8 font-medium tracking-[-0.01em] sm:text-[26px] sm:leading-9 ${mono ? 'mono' : ''}`}>
-        {value}
-      </dd>
-      <dd className="text-muted flex flex-col gap-2 text-xs">{children}</dd>
-    </div>
-  )
-}
+      {/* Today's score */}
+      <section className="card flex flex-col items-center p-4" aria-labelledby="score-title">
+        <h2 id="score-title" className="text-ink-2 self-start text-[13px]">
+          Today's score
+        </h2>
+        <Gauge value={score} label={progress.due === 0 ? 'Rest day' : `${progress.done} of ${progress.due} done`} size={200} />
+      </section>
 
-function Meter({ value, label, accent = false }: { value: number; label: string; accent?: boolean }) {
-  const percent = Math.round(Math.min(1, Math.max(0, value)) * 100)
-  return (
-    <div
-      className="bg-raised h-1 overflow-hidden rounded-full"
-      role="progressbar"
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={percent}
-    >
-      <div
-        className={`h-full origin-left rounded-full transition-transform duration-500 ease-smooth ${accent ? 'bg-accent' : 'bg-ink-2'}`}
-        style={{ transform: `scaleX(${percent / 100})` }}
-      />
+      {/* Last 7 days XP */}
+      <section className="card p-5 md:col-span-2 xl:col-span-1" aria-labelledby="week-xp-title">
+        <div className="flex items-baseline justify-between">
+          <h2 id="week-xp-title" className="text-ink-2 text-[13px]">
+            XP, last 7 days
+          </h2>
+          <p className="mono text-sm font-medium">{weekTotal.toLocaleString('en-US')}</p>
+        </div>
+        <ol className="mt-4 grid h-32 grid-cols-7 items-end gap-2" aria-label="XP per day">
+          {week.map((d) => (
+            <li key={d.date} className="flex h-full flex-col items-center justify-end gap-1.5" title={`${d.xp} XP`}>
+              <span className="mono text-muted text-[10px]">{d.xp || ''}</span>
+              <span
+                className={`w-full max-w-7 rounded-t-md ${d.date === today ? 'bg-accent' : 'bg-accent/45'}`}
+                style={{ height: `${Math.max(4, (d.xp / maxXp) * 100)}%` }}
+              />
+              <span className={`text-[11px] ${d.date === today ? 'text-ink font-medium' : 'text-muted'}`}>
+                {d.date === today ? 'Today' : WEEKDAY_SHORT[weekdayOf(d.date)]}
+              </span>
+              <span className="sr-only">{d.xp} XP</span>
+            </li>
+          ))}
+        </ol>
+      </section>
     </div>
   )
 }

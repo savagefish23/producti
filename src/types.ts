@@ -20,6 +20,9 @@ export const STATUS_LABEL: Record<StatusKind, string> = {
 
 export type Theme = 'light' | 'dark'
 
+export type { ProfileAvatar } from './lib/avatar'
+import type { ProfileAvatar } from './lib/avatar'
+
 export interface Habit {
   id: string
   title: string
@@ -28,6 +31,10 @@ export interface Habit {
   category: Category
   /** Weekdays this habit is due on. All seven = daily. */
   schedule: Weekday[]
+  /** Optional time of day, "HH:mm". Timed habits appear on the calendar timeline. */
+  time?: string
+  /** Minutes, only with a time. */
+  duration?: number
   createdOn: ISODate
   /** Days the habit was completed. */
   completions: ISODate[]
@@ -83,6 +90,8 @@ export interface AppState {
     email: string
     /** Browser notifications for friend reactions. */
     notifications: boolean
+    /** Profile picture: initials, a built avatar, or an uploaded photo. */
+    avatar: ProfileAvatar
     status: StatusKind
   }
   theme: Theme

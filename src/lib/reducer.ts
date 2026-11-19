@@ -9,7 +9,8 @@ import type {
   Weekday,
 } from '../types'
 import { addDays, diffDays } from './dates'
-import { LIMITS } from './validate'
+import { LIMITS, timeFields } from './validate'
+import { sanitizeAvatar, type ProfileAvatar } from './avatar'
 import { normalizeEmail, normalizeUsername, validateSignIn, type SignInFields } from './profile'
 import { createSeed } from './seed'
 import {
@@ -40,6 +41,9 @@ export interface NewHabit {
   icon: string
   category: Category
   schedule: Weekday[]
+  /** Optional "HH:mm" and minutes, for the calendar timeline. */
+  time?: string
+  duration?: number
 }
 
 export type Action =
@@ -58,6 +62,8 @@ export type Action =
   | { type: 'setFastReplies'; on: boolean }
   | ({ type: 'signIn'; fields: SignInFields; sampleData: boolean } & Stamp)
   | { type: 'setNotifications'; on: boolean }
+  | { type: 'updateProfile'; fields: Omit<SignInFields, 'notifications'> }
+  | { type: 'setAvatar'; avatar: ProfileAvatar }
   | ({ type: 'signOut' } & Stamp)
   | ({ type: 'resetDemo' } & Stamp)
   | ({ type: 'clearAll' } & Stamp)
@@ -119,8 +125,11 @@ export function reducer(state: AppState, action: Action): AppState {
         habits: [
           ...state.habits,
           {
-            ...action.habit,
             title,
+            icon: action.habit.icon,
+            category: action.habit.category,
+            schedule: action.habit.schedule,
+            ...timeFields(action.habit.time, action.habit.duration),
             id: `h${state.nextId}-${action.date}`,
             createdOn: action.date,
             completions: [],
@@ -267,6 +276,23 @@ export function reducer(state: AppState, action: Action): AppState {
         fastReplies: state.fastReplies,
       }
     }
+
+    case 'updateProfile': {
+      if (Object.keys(validateSignIn({ ...action.fields, notifications: false })).length > 0) return state
+      return {
+        ...state,
+        profile: {
+          ...state.profile,
+          name: action.fields.fullName.trim(),
+          username: normalizeUsername(action.fields.username),
+          email: normalizeEmail(action.fields.email),
+        },
+      }
+    }
+
+    case 'setAvatar':
+      // Same checks as loading from storage: a bad image falls back to initials.
+      return { ...state, profile: { ...state.profile, avatar: sanitizeAvatar(action.avatar) } }
 
     case 'setNotifications':
       return { ...state, profile: { ...state.profile, notifications: action.on } }

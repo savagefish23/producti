@@ -85,6 +85,10 @@ function Privacy() {
       <p>When you create a profile and use the app, you enter:</p>
       <ul>
         <li>your full name, a username and an email address;</li>
+        <li>
+          optionally, a profile picture: either an avatar you build in the app, or a photo you upload,
+          which is cropped and shrunk on your device before it is saved;
+        </li>
         <li>your habits, check-ins and status;</li>
         <li>settings such as light or dark mode and whether notifications are on.</li>
       </ul>

@@ -2,7 +2,11 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { AddHabitModal } from './components/AddHabitModal'
 import { DevPanel } from './components/DevPanel'
 import { FriendFeed } from './components/FriendFeed'
+import { CalendarPage } from './components/CalendarPage'
 import { HabitStats } from './components/HabitStats'
+import { MeAvatarContext } from './components/meAvatar'
+import { ProfilePage } from './components/ProfilePage'
+import { RankLadder, StatsSummary } from './components/StatsPanels'
 import { HappeningNow } from './components/HappeningNow'
 import { Leaderboard, type LeaderboardEntry } from './components/Leaderboard'
 import { MyHabits } from './components/MyHabits'
@@ -16,9 +20,11 @@ import { Toasts, type Toast } from './components/Toasts'
 import { isHabitIcon } from './components/icons'
 import { navigate, useHashRoute } from './hooks/useHashRoute'
 import { useToday } from './hooks/useToday'
-import { addDays, diffDays, formatDay, localTime, localToday } from './lib/dates'
+import { addDays, diffDays, formatDay, lastDays, localTime, localToday } from './lib/dates'
 import {
   activeDayStreak,
+  activeHabits,
+  dailyXp,
   dayProgress,
   nextCheckinXp,
   rankFor,
@@ -31,7 +37,7 @@ import { hasNudged, reducer, type NewHabit } from './lib/reducer'
 import { createSeed } from './lib/seed'
 import { friendStreak, friendWeeklyXp } from './lib/social'
 import { loadState, saveState } from './lib/storage'
-import { isCompleted } from './lib/streaks'
+import { currentStreak, isCompleted, longestStreak } from './lib/streaks'
 import { notify, requestNotifications } from './notifications'
 import type { AppState, FeedItem, Friend, Habit, ISODate, StatusKind } from './types'
 
@@ -42,7 +48,13 @@ function initState(): AppState {
   return createSeed(localToday(), localTime(), prefersDark ? 'dark' : 'light')
 }
 
-const ROUTE_PAGE: Record<string, Page> = { '/': 'today', '/friends': 'friends', '/stats': 'stats' }
+const ROUTE_PAGE: Record<string, Page> = {
+  '/': 'today',
+  '/calendar': 'calendar',
+  '/friends': 'friends',
+  '/stats': 'stats',
+  '/profile': 'profile',
+}
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, undefined, initState)
@@ -154,7 +166,7 @@ export default function App() {
 
     const before = rankFor(xp)
     const after = rankFor(xp + nextCheckinXp(habit, today, state.freezes))
-    if (after.tier > before.tier) toast(`Rank up: you reached ${after.name}`)
+    if (after.step > before.step) toast(`Rank up: you reached ${after.name}`)
 
     // Occasionally a friend cheers back.
     if (state.friends.length > 0 && (state.fastReplies || chance(0.4))) {
@@ -201,6 +213,12 @@ export default function App() {
 
   // ── Derived view data (all from pure functions in lib/) ────────────────
   const week = recentProgress(state.habits, today)
+  const rank = rankFor(xp)
+  const live = activeHabits(state.habits)
+  const bestStreak = live.reduce((m, h) => Math.max(m, currentStreak(h, today, state.freezes)), 0)
+  const bestEver = state.habits.reduce((m, h) => Math.max(m, longestStreak(h, today, state.freezes)), 0)
+  const weekDays = lastDays(today, 7)
+  const weekXp = dailyXp(state.habits, state.freezes, weekDays).map((x, i) => ({ date: weekDays[i], xp: x }))
   const entries: LeaderboardEntry[] = [
     {
       id: 'me',
@@ -268,9 +286,13 @@ export default function App() {
   )
 
   return (
+    <MeAvatarContext.Provider value={state.profile.avatar}>
     <div className="min-h-dvh lg:pl-64">
       <Sidebar
         page={page}
+        rank={rank}
+        xp={xp}
+        streak={bestStreak}
         unseen={unseen}
         name={state.profile.name}
         username={state.profile.username}
@@ -299,7 +321,7 @@ export default function App() {
             <PageHeader title="Today" subtitle={formatDay(today)}>
               <StatusControl status={state.profile.status} onStatus={handleStatus} />
             </PageHeader>
-            <Overview xp={xp} rank={rankFor(xp)} progress={dayProgress(state.habits, today)} />
+            <Overview xp={xp} rank={rank} progress={dayProgress(state.habits, today)} bestStreak={bestEver} week={weekXp} today={today} />
             <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
               <MyHabits
                 habits={state.habits}
@@ -340,12 +362,42 @@ export default function App() {
           </div>
         )}
 
+        {page === 'calendar' && (
+          <CalendarPage
+            habits={state.habits}
+            freezes={state.freezes}
+            today={today}
+            onToggle={handleToggle}
+            onOpenAdd={() => setAdding(true)}
+          />
+        )}
+
         {page === 'stats' && (
           <div className="space-y-8">
             <PageHeader title="Stats" subtitle="How your habits are going" />
+            <StatsSummary habits={state.habits} today={today} />
             <WeeklyChart days={week} today={today} selected={selected} onSelect={setPicked} />
+            <RankLadder rank={rank} />
             <HabitStats habits={state.habits} freezes={state.freezes} today={today} />
           </div>
+        )}
+
+        {page === 'profile' && (
+          <ProfilePage
+            profile={state.profile}
+            rank={rank}
+            xp={xp}
+            bestStreak={bestEver}
+            checkins={state.habits.reduce((n, h) => n + h.completions.length, 0)}
+            onSave={(fields) => {
+              dispatch({ type: 'updateProfile', fields })
+              toast('Profile saved')
+            }}
+            onAvatar={(avatar) => {
+              dispatch({ type: 'setAvatar', avatar })
+              toast('Profile picture updated')
+            }}
+          />
         )}
 
         <footer className="text-muted mt-16 flex gap-4 text-xs">
@@ -385,5 +437,6 @@ export default function App() {
 
       <Toasts toasts={toasts} />
     </div>
+    </MeAvatarContext.Provider>
   )
 }

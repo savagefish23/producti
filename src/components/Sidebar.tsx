@@ -1,4 +1,6 @@
-import { Bell, BellOff, History, LogOut, Moon, Sun } from 'lucide-react'
+import { Bell, BellOff, Flame, History, LogOut, Moon, Sun } from 'lucide-react'
+import type { RankInfo } from '../lib/game'
+import { RankEmblem } from './RankEmblem'
 import { useState } from 'react'
 import type { Theme } from '../types'
 import { Avatar } from './Avatar'
@@ -8,6 +10,10 @@ import { PAGES, type Page } from './nav'
 
 interface Props {
   page: Page
+  /** For the player card. */
+  rank: RankInfo
+  xp: number
+  streak: number
   unseen: number
   name: string
   username: string
@@ -20,7 +26,7 @@ interface Props {
 }
 
 /** Desktop navigation: wordmark, pages, and the account row at the bottom. */
-export function Sidebar({ page, unseen, dayOffset, ...account }: Props) {
+export function Sidebar({ page, unseen, dayOffset, rank, xp, streak, ...account }: Props) {
   return (
     <aside className="border-line bg-sidebar fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r lg:flex">
       <div className="flex h-16 items-center px-6">
@@ -29,7 +35,9 @@ export function Sidebar({ page, unseen, dayOffset, ...account }: Props) {
         </a>
       </div>
 
-      <nav aria-label="Main" className="flex flex-col gap-1 px-3 pt-2">
+      <PlayerCard name={account.name} username={account.username} rank={rank} xp={xp} streak={streak} />
+
+      <nav aria-label="Main" className="flex flex-col gap-1 px-3 pt-4">
         {PAGES.map(({ id, label, href, icon: Icon }) => {
           const active = id === page
           return (
@@ -78,6 +86,41 @@ type AccountProps = Pick<
   'name' | 'username' | 'notifications' | 'onToggleNotifications' | 'theme' | 'onToggleTheme' | 'onSignOut'
 >
 
+/** The gamified bit of the sidebar: who you are, your rank and how close the next one is. */
+function PlayerCard({ name, username, rank, xp, streak }: Pick<Props, 'name' | 'username' | 'rank' | 'xp' | 'streak'>) {
+  return (
+    <a
+      href="/#/profile"
+      className="focus-ring border-line bg-surface hover:bg-raised mx-3 block rounded-xl border p-3 transition-colors duration-150"
+      aria-label={`${name}, ${rank.name}, ${xp.toLocaleString('en-US')} XP. Open profile`}
+    >
+      <div className="flex items-center gap-3">
+        <span className="relative">
+          <Avatar name={name} me size="md" />
+          <RankEmblem rank={rank} size={22} className="absolute -right-1.5 -bottom-1.5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium">{name}</span>
+          <span className="mono text-muted block truncate text-xs">@{username}</span>
+        </span>
+      </div>
+      <div className="mt-3 flex items-center justify-between text-xs">
+        <span className="font-medium">{rank.name}</span>
+        <span className="mono text-accent-text flex items-center gap-1">
+          <Flame className="size-3.5" strokeWidth={2} aria-hidden="true" />
+          {streak}d
+        </span>
+      </div>
+      <div className="bg-raised mt-1.5 h-1.5 overflow-hidden rounded-full" aria-hidden="true">
+        <div className="bg-accent h-full origin-left rounded-full" style={{ transform: `scaleX(${rank.progress})` }} />
+      </div>
+      <p className="mono text-muted mt-1.5 text-[11px]">
+        {rank.next ? `${rank.xpToNext.toLocaleString('en-US')} XP to ${rank.next.name}` : 'Top rank'}
+      </p>
+    </a>
+  )
+}
+
 function AccountRow({ name, username, notifications, onToggleNotifications, theme, onToggleTheme, onSignOut }: AccountProps) {
   const [confirming, setConfirming] = useState(false)
 
@@ -98,12 +141,8 @@ function AccountRow({ name, username, notifications, onToggleNotifications, them
   }
 
   return (
-    <div className="border-line flex items-center gap-3 border-t px-2 pt-3">
-      <Avatar name={name} me size="sm" />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium">{name}</span>
-        <span className="mono text-muted block truncate text-xs">@{username}</span>
-      </span>
+    <div className="border-line flex items-center gap-1 border-t px-2 pt-3" aria-label={`Settings for ${name} (@${username})`}>
+      <span className="text-muted mr-auto text-xs">Settings</span>
       <NotificationsButton notifications={notifications} onToggleNotifications={onToggleNotifications} />
       <ThemeButton theme={theme} onToggleTheme={onToggleTheme} />
       <button
@@ -162,7 +201,7 @@ export function MobileBars({
   theme,
   onToggleTheme,
   onSignOut,
-}: Omit<Props, 'dayOffset' | 'username'> & { username?: string }) {
+}: Omit<Props, 'dayOffset' | 'username' | 'rank' | 'xp' | 'streak'> & { username?: string }) {
   const [confirming, setConfirming] = useState(false)
   return (
     <>

@@ -16,7 +16,7 @@ import { sanitizeState } from './validate'
 export const STORAGE_KEY = 'producti:state'
 const BACKUP_KEY = 'producti:state:backup'
 
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
 
 /** Upgrades data from version N (the key) to version N + 1. */
 export type Migration = (data: unknown) => unknown
@@ -50,6 +50,12 @@ export const MIGRATIONS: Migrations = {
         return rest
       }),
     }
+  },
+  // v5 added a profile picture (and optional habit times, which need no
+  // migration). Existing profiles start with initials.
+  4: (data) => {
+    const s = data as { profile?: Record<string, unknown> }
+    return { ...s, profile: { ...(s.profile ?? {}), avatar: { kind: 'initials' } } }
   },
 }
 

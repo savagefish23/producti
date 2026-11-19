@@ -2,6 +2,7 @@ import { X } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { WEEKDAY_LONG, WEEKDAY_SHORT } from '../lib/dates'
 import { BASE_XP, STREAK_BONUS_CAP } from '../lib/game'
+import { DURATIONS } from '../lib/validate'
 import type { NewHabit } from '../lib/reducer'
 import { CATEGORIES, type Category, type Weekday } from '../types'
 import { HABIT_ICONS } from './icons'
@@ -31,6 +32,9 @@ export function AddHabitModal({ onAdd, onClose }: Props) {
   const [category, setCategory] = useState<Category>('Health')
   const [daily, setDaily] = useState(true)
   const [days, setDays] = useState<Weekday[]>(WEEKDAYS)
+  const [timed, setTimed] = useState(false)
+  const [time, setTime] = useState('07:00')
+  const [duration, setDuration] = useState(30)
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -46,7 +50,7 @@ export function AddHabitModal({ onAdd, onClose }: Props) {
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (!valid) return
-    onAdd({ title: title.trim(), icon, category, schedule })
+    onAdd({ title: title.trim(), icon, category, schedule, ...(timed && time ? { time, duration } : {}) })
     onClose()
   }
 
@@ -161,6 +165,42 @@ export function AddHabitModal({ onAdd, onClose }: Props) {
                     : 'Your streak counts only these days. The others never break it.'}
                 </p>
               </>
+            )}
+          </fieldset>
+
+          <fieldset>
+            <legend className="text-sm font-medium">Time</legend>
+            <label className="mt-2 flex cursor-pointer items-center gap-2 text-[13px]">
+              <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} className="size-4 accent-(--accent)" />
+              Set a time so it appears on the calendar timeline
+            </label>
+            {timed && (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <label className="text-ink-2 text-xs">
+                  Starts at
+                  <input
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    required
+                    className="border-line-strong bg-raised text-ink focus:border-accent mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none"
+                  />
+                </label>
+                <label className="text-ink-2 text-xs">
+                  Lasts
+                  <select
+                    value={duration}
+                    onChange={(e) => setDuration(Number(e.target.value))}
+                    className="border-line-strong bg-raised text-ink focus:border-accent mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none"
+                  >
+                    {DURATIONS.map((d) => (
+                      <option key={d} value={d}>
+                        {d < 60 ? `${d} min` : d % 60 === 0 ? `${d / 60} h` : `${Math.floor(d / 60)} h ${d % 60} min`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             )}
           </fieldset>
         </div>
