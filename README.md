@@ -6,7 +6,7 @@
 
 ![The Today page: rank card with emblem, today's score gauge, XP over the last 7 days, habits and friends' check-ins](docs/app-light.png)
 
-> This is a portfolio demo with no server. Your profile and habits are stored only in your browser, and the friends are simulated on your device.
+> Create a real account to sync your habits across devices, or **explore with sample data** without signing up (that demo stays in your browser). Friends are simulated for now.
 
 ## The app
 
@@ -49,7 +49,7 @@ Each step takes a little more XP than the last (step *i* starts at 25·i² + 100
 - **Habits with real streak rules.** Streaks count scheduled days only, so a Mon/Wed/Fri habit is never broken by a Tuesday.
 - **A weekly Streak Freeze.** One per week, spent automatically to protect a streak when you miss a day.
 - **Fair XP, no difficulty picker.** Every check-in earns 10 XP plus 1 per streak day (up to +20), so XP only grows by showing up. Users can't pick a bigger reward.
-- **Sign-up with validation.** Full name, username (suggested from your name) and email, with clear errors and focus on the first one to fix. A shortcut lets visitors explore with sample data instead.
+- **Real accounts.** Email + password sign-up with a confirmation email, sign-in, forgot/reset password, and self-service account deletion. Your data syncs across devices. A shortcut lets visitors explore with sample data instead.
 - **Friends that react.** Cheer a friend and they thank you; nudge one and they check in. It's scripted, but nothing in it is a dead button.
 - **Notifications.** Opt in at sign-up or from the sidebar to get a browser notification when a friend reacts while the app is in the background.
 - **A 22-step rank ladder** from Bronze I to Eternal, with an emblem per tier and a rank-up message when you climb.
@@ -72,11 +72,22 @@ Each step takes a little more XP than the last (step *i* starts at 25·i² + 100
 | --- | --- |
 | Stack | React 19, TypeScript, Vite, Tailwind CSS v4, Lucide icons |
 | State | One pure reducer; every change is a tested, deterministic function |
-| Storage | `localStorage` with a versioned schema and step-by-step migrations, so saved data is never wiped |
+| Accounts | Supabase Auth (email + password, PKCE) and Postgres with row-level security |
+| Storage | Synced to Supabase per user, cached in `localStorage` with a versioned schema and step-by-step migrations, so saved data is never wiped |
 | Dates | Plain calendar days (`2026-11-19`), never timestamps, so streaks survive midnight and timezone changes |
 | Routing | Hash routes (`#/`, `#/calendar`, `#/friends`, `#/stats`, `#/profile`), plus real paths for `/privacy` and `/terms` |
-| Tests | 61 unit tests with Vitest, covering streaks, freezes, XP, ranks, stats, sign-up and avatar validation, migrations and security |
+| Tests | 65 unit tests with Vitest, covering streaks, freezes, XP, ranks, stats, sign-up and avatar validation, migrations and security |
 | Hosting | Vercel, with a strict Content-Security-Policy and security headers |
+
+### Accounts and data security
+
+Accounts run on [Supabase](https://supabase.com) (auth + Postgres). The database setup is in [supabase/migrations/0001_accounts.sql](supabase/migrations/0001_accounts.sql):
+
+- **Emails are never exposed.** They live only in Supabase Auth, which the public API can't read; no table stores an email.
+- **Row-level security on every table.** Users can read and change only their own data. Signed-out visitors get nothing.
+- **Only the public key ships in the app.** The secret key never leaves the Supabase dashboard.
+- **Rate limits** on sign-in and account emails (Supabase), plus a cooldown on password-reset requests.
+- **Account deletion** goes through a database function that can only delete the caller.
 
 ### Security
 
@@ -92,6 +103,13 @@ I attacked the app myself and fixed what got through:
 ```bash
 npm install
 npm run dev      # http://localhost:5173
+```
+
+For accounts, create `.env.local` with your Supabase project URL and **publishable (anon)** key, then run the SQL migration in the Supabase SQL editor. Without it, the app runs as a local-only demo.
+
+```bash
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-publishable-key
 ```
 
 | Command | What it does |
