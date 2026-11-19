@@ -4,7 +4,7 @@ import { Wordmark } from './Logo'
 
 export type LegalPage = 'privacy' | 'terms'
 
-const UPDATED = '14 November 2026'
+const UPDATED = '19 November 2026'
 
 /** Privacy policy and terms. Written to match what the app actually does. */
 export function Legal({ page }: { page: LegalPage }) {
@@ -55,14 +55,28 @@ function Privacy() {
 
       <h2>What is stored, and where</h2>
       <p>
-        The name you enter, your habits, check-ins and settings are saved in your browser's local
-        storage on your device. They are never sent to us or to anyone else. Clearing your browser
-        data, or choosing <strong>Sign out</strong>, deletes them permanently.
+        When you create a profile you enter your full name, a username and an email address. These,
+        along with your habits, check-ins and settings, are saved in your browser's local storage on
+        your device. They are never sent to us or to anyone else: Producti has no server to send them
+        to. Clearing your browser data, or choosing <strong>Sign out</strong>, deletes them
+        permanently.
+      </p>
+      <p>
+        Your email address is not used for anything yet. Nothing is emailed to you, and it is not
+        checked or verified.
+      </p>
+
+      <h2>Notifications</h2>
+      <p>
+        If you turn notifications on, your browser asks for permission and then shows a notification
+        when a simulated friend reacts while Producti is in the background. These notifications are
+        created on your device; there is no push service involved. You can turn them off in the app
+        or in your browser settings at any time.
       </p>
 
       <h2>What we do not collect</h2>
       <ul>
-        <li>No email addresses or passwords. The app never asks for them.</li>
+        <li>No passwords. The app never asks for one.</li>
         <li>No analytics, advertising or tracking scripts.</li>
         <li>No cookies set by Producti.</li>
       </ul>

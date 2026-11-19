@@ -11,6 +11,7 @@ import {
   type ISODate,
   type Weekday,
 } from '../types'
+import { isValidEmail, isValidUsername, normalizeEmail, normalizeUsername, PROFILE_LIMITS } from './profile'
 
 /*
  * Saved data is untrusted: it can be edited in dev tools, by an extension,
@@ -147,8 +148,16 @@ export function sanitizeState(
   return {
     signedIn: raw.signedIn === true,
     profile: {
-      name: str(profile.name, LIMITS.name).trim() || 'Guest',
-      handle: str(profile.handle, LIMITS.name, '@you'),
+      name: str(profile.name, PROFILE_LIMITS.fullName).trim() || 'Guest',
+      username: (() => {
+        const u = normalizeUsername(str(profile.username, 64))
+        return isValidUsername(u) ? u : 'you'
+      })(),
+      email: (() => {
+        const e = normalizeEmail(str(profile.email, PROFILE_LIMITS.email + 1))
+        return isValidEmail(e) ? e : ''
+      })(),
+      notifications: profile.notifications === true,
       status: oneOf(profile.status, STATUSES, 'Idle'),
     },
     theme: raw.theme === 'dark' ? 'dark' : 'light',

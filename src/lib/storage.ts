@@ -16,7 +16,7 @@ import { sanitizeState } from './validate'
 export const STORAGE_KEY = 'producti:state'
 const BACKUP_KEY = 'producti:state:backup'
 
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 /** Upgrades data from version N (the key) to version N + 1. */
 export type Migration = (data: unknown) => unknown
@@ -26,6 +26,16 @@ export const MIGRATIONS: Migrations = {
   // v2 added the sign-in screen. Anyone with saved v1 data was already using
   // the app, so they stay signed in.
   1: (data) => ({ ...(data as object), signedIn: true }),
+  // v3 replaced the profile "handle" with username, email and a
+  // notifications preference. The old handle becomes the username.
+  2: (data) => {
+    const s = data as { profile?: Record<string, unknown> }
+    const profile = s.profile ?? {}
+    const handle = typeof profile.handle === 'string' ? profile.handle.replace(/^@+/, '') : ''
+    const { handle: _drop, ...rest } = profile
+    void _drop
+    return { ...s, profile: { ...rest, username: handle || 'you', email: '', notifications: false } }
+  },
 }
 
 interface Envelope {

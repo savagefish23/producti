@@ -11,6 +11,7 @@ import type {
 } from '../types'
 import { addDays, diffDays } from './dates'
 import { LIMITS } from './validate'
+import { normalizeEmail, normalizeUsername, validateSignIn, type SignInFields } from './profile'
 import { createSeed } from './seed'
 import {
   CHEER_LINES,
@@ -57,7 +58,8 @@ export type Action =
   | { type: 'setTheme'; theme: Theme }
   | { type: 'advanceDays'; days: number }
   | { type: 'setFastReplies'; on: boolean }
-  | ({ type: 'signIn'; name: string; sampleData: boolean } & Stamp)
+  | ({ type: 'signIn'; fields: SignInFields; sampleData: boolean } & Stamp)
+  | { type: 'setNotifications'; on: boolean }
   | ({ type: 'signOut' } & Stamp)
   | ({ type: 'resetDemo' } & Stamp)
   | ({ type: 'clearAll' } & Stamp)
@@ -250,16 +252,26 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, fastReplies: action.on }
 
     case 'signIn': {
-      const name = action.name.trim().slice(0, 24) || 'Guest'
+      // The form validates too, but the reducer never trusts its input.
+      if (Object.keys(validateSignIn(action.fields)).length > 0) return state
       const seed = createSeed(action.date, action.time, state.theme)
       return {
         ...seed,
         ...(action.sampleData ? {} : { habits: [], freezes: [] }),
         signedIn: true,
-        profile: { ...seed.profile, name },
+        profile: {
+          ...seed.profile,
+          name: action.fields.fullName.trim(),
+          username: normalizeUsername(action.fields.username),
+          email: normalizeEmail(action.fields.email),
+          notifications: action.fields.notifications,
+        },
         fastReplies: state.fastReplies,
       }
     }
+
+    case 'setNotifications':
+      return { ...state, profile: { ...state.profile, notifications: action.on } }
 
     case 'signOut':
       // Local-only demo: signing out clears this device and returns to sign-in.
@@ -273,7 +285,7 @@ export function reducer(state: AppState, action: Action): AppState {
         ...seed,
         ...(action.type === 'clearAll' ? { habits: [], freezes: [] } : {}),
         signedIn: state.signedIn,
-        profile: { ...seed.profile, name: state.profile.name },
+        profile: { ...state.profile, status: seed.profile.status },
         fastReplies: state.fastReplies,
       }
     }

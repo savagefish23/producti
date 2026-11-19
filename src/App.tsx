@@ -32,6 +32,7 @@ import { createSeed } from './lib/seed'
 import { friendStreak, friendWeeklyXp } from './lib/social'
 import { loadState, saveState } from './lib/storage'
 import { isCompleted } from './lib/streaks'
+import { notify, requestNotifications } from './notifications'
 import type { AppState, FeedItem, Friend, Habit, ISODate, StatusKind } from './types'
 
 function initState(): AppState {
@@ -119,6 +120,12 @@ export default function App() {
     [later],
   )
 
+  /** A friend reacted: in-app toast, plus a browser notification if turned on. */
+  const friendNews = (text: string) => {
+    toast(text)
+    if (stateRef.current.profile.notifications) notify(text)
+  }
+
   /** Current app date + wall-clock time, read at the moment something happens. */
   const stamp = () => ({
     date: addDays(localToday(), stateRef.current.dayOffset),
@@ -157,7 +164,7 @@ export default function App() {
         const current = stateRef.current.habits.find((h) => h.id === habit.id)
         if (!current || !isCompleted(current, now.date)) return // un-checked meanwhile
         dispatch({ type: 'friendCheer', friendId: friend.id, habitId: habit.id, variant: variant(), ...now })
-        toast(`${firstName(friend)} cheered your check-in`)
+        friendNews(`${firstName(friend)} cheered your check-in`)
       })
     }
   }
@@ -170,7 +177,7 @@ export default function App() {
     // They thank you ~30s later.
     friendReplies(22, 38, () => {
       dispatch({ type: 'friendThanks', friendId: friend.id, variant: variant(), ...stamp() })
-      toast(`${firstName(friend)} thanked you for the cheer`)
+      friendNews(`${firstName(friend)} thanked you for the cheer`)
     })
   }
 
@@ -180,7 +187,7 @@ export default function App() {
     toast(`Nudge sent to ${firstName(friend)}`)
     friendReplies(12, 30, () => {
       dispatch({ type: 'friendNudgedCheckin', friendId: friend.id, variant: variant(), ...stamp() })
-      toast(`${firstName(friend)} checked in after your nudge`)
+      friendNews(`${firstName(friend)} checked in after your nudge`)
     })
   }
 
@@ -214,6 +221,16 @@ export default function App() {
   const toggleTheme = () =>
     dispatch({ type: 'setTheme', theme: state.theme === 'dark' ? 'light' : 'dark' })
 
+  const toggleNotifications = async () => {
+    if (state.profile.notifications) {
+      dispatch({ type: 'setNotifications', on: false })
+      return
+    }
+    const allowed = await requestNotifications()
+    dispatch({ type: 'setNotifications', on: allowed })
+    toast(allowed ? 'Notifications on' : 'Notifications are blocked in your browser settings')
+  }
+
   const signOut = () => {
     dispatch({ type: 'signOut', date: realToday, time: localTime() })
     setDevOpen(false)
@@ -230,8 +247,8 @@ export default function App() {
         today={today}
         theme={state.theme}
         onToggleTheme={toggleTheme}
-        onSignIn={(name, sampleData) => {
-          dispatch({ type: 'signIn', name, sampleData, date: today, time: localTime() })
+        onSignIn={(fields, sampleData) => {
+          dispatch({ type: 'signIn', fields, sampleData, date: today, time: localTime() })
           setPicked(null)
           navigate('/')
         }}
@@ -256,6 +273,9 @@ export default function App() {
         page={page}
         unseen={unseen}
         name={state.profile.name}
+        username={state.profile.username}
+        notifications={state.profile.notifications}
+        onToggleNotifications={toggleNotifications}
         theme={state.theme}
         dayOffset={state.dayOffset}
         onToggleTheme={toggleTheme}
@@ -265,6 +285,9 @@ export default function App() {
         page={page}
         unseen={unseen}
         name={state.profile.name}
+        username={state.profile.username}
+        notifications={state.profile.notifications}
+        onToggleNotifications={toggleNotifications}
         theme={state.theme}
         onToggleTheme={toggleTheme}
         onSignOut={signOut}

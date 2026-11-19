@@ -78,7 +78,17 @@ export interface FeedItem {
 export interface AppState {
   /** False shows the sign-in screen. Local-only: there is no account server. */
   signedIn: boolean
-  profile: { name: string; handle: string; status: StatusKind }
+  profile: {
+    /** Full name, shown in the app. */
+    name: string
+    /** Lowercase, without the @. */
+    username: string
+    /** Stored in this browser only; nothing is sent anywhere. */
+    email: string
+    /** Browser notifications for friend reactions. */
+    notifications: boolean
+    status: StatusKind
+  }
   theme: Theme
   habits: Habit[]
   freezes: FreezeUse[]

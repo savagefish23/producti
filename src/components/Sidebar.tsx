@@ -1,4 +1,4 @@
-import { History, LogOut, Moon, Sun } from 'lucide-react'
+import { Bell, BellOff, History, LogOut, Moon, Sun } from 'lucide-react'
 import { useState } from 'react'
 import type { Theme } from '../types'
 import { Avatar } from './Avatar'
@@ -10,6 +10,9 @@ interface Props {
   page: Page
   unseen: number
   name: string
+  username: string
+  notifications: boolean
+  onToggleNotifications: () => void
   theme: Theme
   dayOffset: number
   onToggleTheme: () => void
@@ -17,7 +20,7 @@ interface Props {
 }
 
 /** Desktop navigation: wordmark, pages, and the account row at the bottom. */
-export function Sidebar({ page, unseen, name, theme, dayOffset, onToggleTheme, onSignOut }: Props) {
+export function Sidebar({ page, unseen, dayOffset, ...account }: Props) {
   return (
     <aside className="border-line bg-sidebar fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r lg:flex">
       <div className="flex h-16 items-center px-6">
@@ -64,18 +67,18 @@ export function Sidebar({ page, unseen, name, theme, dayOffset, onToggleTheme, o
             </p>
           )}
         </div>
-        <AccountRow name={name} theme={theme} onToggleTheme={onToggleTheme} onSignOut={onSignOut} />
+        <AccountRow {...account} />
       </div>
     </aside>
   )
 }
 
-function AccountRow({
-  name,
-  theme,
-  onToggleTheme,
-  onSignOut,
-}: Pick<Props, 'name' | 'theme' | 'onToggleTheme' | 'onSignOut'>) {
+type AccountProps = Pick<
+  Props,
+  'name' | 'username' | 'notifications' | 'onToggleNotifications' | 'theme' | 'onToggleTheme' | 'onSignOut'
+>
+
+function AccountRow({ name, username, notifications, onToggleNotifications, theme, onToggleTheme, onSignOut }: AccountProps) {
   const [confirming, setConfirming] = useState(false)
 
   if (confirming) {
@@ -97,7 +100,11 @@ function AccountRow({
   return (
     <div className="border-line flex items-center gap-3 border-t px-2 pt-3">
       <Avatar name={name} me size="sm" />
-      <span className="min-w-0 flex-1 truncate text-sm font-medium">{name}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium">{name}</span>
+        <span className="mono text-muted block truncate text-xs">@{username}</span>
+      </span>
+      <NotificationsButton notifications={notifications} onToggleNotifications={onToggleNotifications} />
       <ThemeButton theme={theme} onToggleTheme={onToggleTheme} />
       <button
         type="button"
@@ -126,8 +133,36 @@ export function ThemeButton({ theme, onToggleTheme }: Pick<Props, 'theme' | 'onT
   )
 }
 
+function NotificationsButton({ notifications, onToggleNotifications }: Pick<Props, 'notifications' | 'onToggleNotifications'>) {
+  return (
+    <button
+      type="button"
+      onClick={onToggleNotifications}
+      aria-pressed={notifications}
+      aria-label={notifications ? 'Turn notifications off' : 'Turn notifications on'}
+      title={notifications ? 'Notifications on' : 'Notifications off'}
+      className="btn btn-sm btn-ghost btn-icon"
+    >
+      {notifications ? (
+        <Bell className="text-accent-text size-4" strokeWidth={1.75} />
+      ) : (
+        <BellOff className="size-4" strokeWidth={1.75} />
+      )}
+    </button>
+  )
+}
+
 /** Phones and tablets: a slim top bar plus a bottom tab bar. */
-export function MobileBars({ page, unseen, name, theme, onToggleTheme, onSignOut }: Omit<Props, 'dayOffset'>) {
+export function MobileBars({
+  page,
+  unseen,
+  name,
+  notifications,
+  onToggleNotifications,
+  theme,
+  onToggleTheme,
+  onSignOut,
+}: Omit<Props, 'dayOffset' | 'username'> & { username?: string }) {
   const [confirming, setConfirming] = useState(false)
   return (
     <>
@@ -138,6 +173,7 @@ export function MobileBars({ page, unseen, name, theme, onToggleTheme, onSignOut
           </a>
           <span className="mono text-muted text-xs">demo</span>
           <div className="ml-auto flex items-center gap-1">
+            <NotificationsButton notifications={notifications} onToggleNotifications={onToggleNotifications} />
             <ThemeButton theme={theme} onToggleTheme={onToggleTheme} />
             {confirming ? (
               <>

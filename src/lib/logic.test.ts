@@ -201,13 +201,36 @@ describe('reducer', () => {
     expect(reducer(s1, { type: 'rollover', date: next, time: '09:00' })).toBe(s1)
   })
 
-  it('signing in sets the name and starts fresh or with sample data', () => {
-    const fresh = reducer(seed(), { type: 'signIn', name: '  Sam  ', sampleData: false, date: FRI, time: '09:00' })
-    expect(fresh).toMatchObject({ signedIn: true, profile: { name: 'Sam' }, habits: [] })
-    const sample = reducer(seed(), { type: 'signIn', name: '', sampleData: true, date: FRI, time: '09:00' })
-    expect(sample.profile.name).toBe('Guest')
+  const fields = {
+    fullName: '  Sam Rivera  ',
+    username: '@Sam_Rivera',
+    email: ' Sam@Example.com ',
+    notifications: true,
+  }
+
+  it('signing in saves the cleaned-up profile and starts fresh or with sample data', () => {
+    const fresh = reducer(seed(), { type: 'signIn', fields, sampleData: false, date: FRI, time: '09:00' })
+    expect(fresh).toMatchObject({
+      signedIn: true,
+      profile: { name: 'Sam Rivera', username: 'sam_rivera', email: 'sam@example.com', notifications: true },
+      habits: [],
+    })
+    const sample = reducer(seed(), { type: 'signIn', fields, sampleData: true, date: FRI, time: '09:00' })
     expect(sample.habits.length).toBe(5)
     expect(reducer(sample, { type: 'signOut', date: FRI, time: '09:00' }).signedIn).toBe(false)
+  })
+
+  it('refuses to sign in with invalid fields even if the form is bypassed', () => {
+    const s0 = seed()
+    for (const bad of [
+      { ...fields, fullName: ' ' },
+      { ...fields, username: 'a b' },
+      { ...fields, username: 'x' },
+      { ...fields, email: 'not-an-email' },
+      { ...fields, email: 'a@b' },
+    ]) {
+      expect(reducer(s0, { type: 'signIn', fields: bad, sampleData: false, date: FRI, time: '09:00' })).toBe(s0)
+    }
   })
 
   it('archiving keeps earned XP', () => {
