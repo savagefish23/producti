@@ -5,7 +5,7 @@ import { activeDayStreak, dayProgress, rankFor, totalXp, weeklyXp } from './game
 import { reducer } from './reducer'
 import { createSeed } from './seed'
 import { friendDayXp, friendStreak, friendWeeklyXp } from './social'
-import { migrate } from './storage'
+import { migrate, MIGRATIONS, SCHEMA_VERSION } from './storage'
 import { currentStreak, dayState, freezeAvailable, settleFreezes } from './streaks'
 
 const DAILY: Weekday[] = [0, 1, 2, 3, 4, 5, 6]
@@ -183,6 +183,15 @@ describe('reducer', () => {
     expect(reducer(s1, { type: 'rollover', date: next, time: '09:00' })).toBe(s1)
   })
 
+  it('signing in sets the name and starts fresh or with sample data', () => {
+    const fresh = reducer(seed(), { type: 'signIn', name: '  Sam  ', sampleData: false, date: FRI, time: '09:00' })
+    expect(fresh).toMatchObject({ signedIn: true, profile: { name: 'Sam' }, habits: [] })
+    const sample = reducer(seed(), { type: 'signIn', name: '', sampleData: true, date: FRI, time: '09:00' })
+    expect(sample.profile.name).toBe('Guest')
+    expect(sample.habits.length).toBe(5)
+    expect(reducer(sample, { type: 'signOut', date: FRI, time: '09:00' }).signedIn).toBe(false)
+  })
+
   it('archiving keeps earned XP', () => {
     const s0 = seed()
     const s1 = reducer(s0, { type: 'archiveHabit', habitId: s0.habits[1].id, date: FRI, time: '12:00' })
@@ -233,6 +242,14 @@ describe('storage migrations', () => {
     }
     expect(migrate({ schemaVersion: 1, data: { a: 1 } }, migrations, 3)).toEqual({ a: 1, b: 2, c: 3 })
     expect(migrate({ schemaVersion: 3, data: { a: 1 } }, migrations, 3)).toEqual({ a: 1 })
+  })
+
+  it('migrates saved v1 data to the current version and keeps it signed in', () => {
+    const v1 = { ...createSeed(FRI, '12:00') } as Partial<AppState>
+    delete v1.signedIn
+    const out = migrate({ schemaVersion: 1, data: v1 }, MIGRATIONS, SCHEMA_VERSION) as AppState
+    expect(out.signedIn).toBe(true)
+    expect(out.habits).toEqual(v1.habits)
   })
 
   it('rejects data it cannot understand', () => {

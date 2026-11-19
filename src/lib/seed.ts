@@ -117,6 +117,7 @@ export function createSeed(today: ISODate, time: string, theme: Theme = 'light')
   )
 
   return {
+    signedIn: false,
     profile: { name: 'You', handle: '@you', status: 'Idle' },
     theme,
     habits,

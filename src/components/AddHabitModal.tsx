@@ -5,7 +5,7 @@ import { XP_BY_DIFFICULTY } from '../lib/game'
 import type { NewHabit } from '../lib/reducer'
 import { CATEGORIES, DIFFICULTIES, type Category, type Difficulty, type Weekday } from '../types'
 import { HABIT_ICONS } from './icons'
-import { CATEGORY_STYLES, DIFFICULTY_LABEL } from './styles'
+import { CATEGORY_DOT, DIFFICULTY_LABEL } from './styles'
 
 interface Props {
   onAdd: (habit: NewHabit) => void
@@ -15,11 +15,9 @@ interface Props {
 const ALL_DAYS: Weekday[] = [1, 2, 3, 4, 5, 6, 0] // Monday first
 const WEEKDAYS: Weekday[] = [1, 2, 3, 4, 5]
 
-const chip = (active: boolean) =>
-  `focus-ring rounded-xl border px-3 py-2 text-sm font-semibold transition ${
-    active
-      ? 'border-indigo-500 bg-indigo-500/10 text-indigo-700 dark:text-indigo-200'
-      : 'border-line text-muted hover:border-indigo-300 hover:text-ink'
+const option = (active: boolean) =>
+  `focus-ring rounded-lg border text-sm transition-colors duration-150 ease-smooth ${
+    active ? 'border-ink bg-raised text-ink font-medium' : 'border-line-strong text-ink-2 hover:bg-raised hover:text-ink'
   }`
 
 /**
@@ -61,26 +59,21 @@ export function AddHabitModal({ onAdd, onClose }: Props) {
         if (e.target === dialogRef.current) onClose() // click on the backdrop
       }}
       aria-labelledby="add-habit-title"
-      className="bg-surface text-ink m-auto w-[min(32rem,calc(100vw-2rem))] rounded-2xl p-0 shadow-2xl backdrop:bg-indigo-950/50 backdrop:backdrop-blur-sm"
+      className="bg-surface text-ink m-auto w-[min(32rem,calc(100vw-2rem))] rounded-2xl p-0 shadow-(--shadow-lg) backdrop:bg-[#12110f]/50"
     >
       <form onSubmit={submit} className="flex max-h-[calc(100dvh-2rem)] flex-col">
-        <div className="border-line flex items-center justify-between border-b px-5 py-4">
-          <h2 id="add-habit-title" className="text-lg font-extrabold tracking-tight">
+        <div className="border-line flex items-center justify-between border-b py-3 pr-3 pl-6">
+          <h2 id="add-habit-title" className="text-lg font-semibold">
             New habit
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="focus-ring text-muted hover:bg-sunken rounded-full p-1.5"
-          >
-            <X className="size-5" />
+          <button type="button" onClick={onClose} aria-label="Close" className="btn btn-ghost btn-icon">
+            <X className="size-4.5" strokeWidth={1.5} />
           </button>
         </div>
 
-        <div className="space-y-5 overflow-y-auto px-5 py-5">
+        <div className="space-y-6 overflow-y-auto px-6 py-6">
           <div>
-            <label htmlFor="habit-title" className="text-sm font-bold">
+            <label htmlFor="habit-title" className="text-sm font-medium">
               Title
             </label>
             <input
@@ -90,14 +83,14 @@ export function AddHabitModal({ onAdd, onClose }: Props) {
               maxLength={40}
               autoFocus
               required
-              placeholder="e.g. Walk 8,000 steps"
-              className="border-line bg-sunken placeholder:text-muted/70 mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
+              placeholder="Walk 8,000 steps"
+              className="border-line-strong bg-raised placeholder:text-muted focus:border-accent mt-2 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-(--accent-soft)"
             />
           </div>
 
           <fieldset>
-            <legend className="text-sm font-bold">Icon</legend>
-            <div className="mt-1.5 grid grid-cols-8 gap-1.5">
+            <legend className="text-sm font-medium">Icon</legend>
+            <div className="mt-2 grid grid-cols-8 gap-1">
               {Object.entries(HABIT_ICONS).map(([key, { icon: Icon, label }]) => (
                 <button
                   key={key}
@@ -106,68 +99,66 @@ export function AddHabitModal({ onAdd, onClose }: Props) {
                   aria-pressed={icon === key}
                   title={label}
                   onClick={() => setIcon(key)}
-                  className={`focus-ring flex aspect-square items-center justify-center rounded-xl border transition ${
-                    icon === key
-                      ? `border-transparent ${CATEGORY_STYLES[category].solid}`
-                      : 'border-line text-muted hover:text-ink hover:border-indigo-300'
+                  className={`focus-ring flex aspect-square items-center justify-center rounded-lg transition-colors duration-150 ease-smooth ${
+                    icon === key ? 'bg-ink text-canvas' : 'text-ink-2 hover:bg-raised hover:text-ink'
                   }`}
                 >
-                  <Icon className="size-5" aria-hidden="true" />
+                  <Icon className="size-4.5" strokeWidth={1.5} aria-hidden="true" />
                 </button>
               ))}
             </div>
           </fieldset>
 
           <fieldset>
-            <legend className="text-sm font-bold">Category</legend>
-            <div className="mt-1.5 grid grid-cols-4 gap-1.5">
-              {CATEGORIES.map((option) => (
+            <legend className="text-sm font-medium">Category</legend>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {CATEGORIES.map((value) => (
                 <button
-                  key={option}
+                  key={value}
                   type="button"
-                  aria-pressed={category === option}
-                  onClick={() => setCategory(option)}
-                  className={chip(category === option)}
+                  aria-pressed={category === value}
+                  onClick={() => setCategory(value)}
+                  className={`${option(category === value)} inline-flex h-10 items-center justify-center gap-2`}
                 >
-                  <span className={`mr-1.5 inline-block size-2 rounded-full ${CATEGORY_STYLES[option].bar}`} aria-hidden="true" />
-                  {option}
+                  <span className={`size-2 rounded-full ${CATEGORY_DOT[value]}`} aria-hidden="true" />
+                  {value}
                 </button>
               ))}
             </div>
           </fieldset>
 
           <fieldset>
-            <legend className="text-sm font-bold">Difficulty</legend>
-            <p className="text-muted text-xs">Harder habits earn more XP per check-in.</p>
-            <div className="mt-1.5 grid grid-cols-3 gap-1.5">
-              {DIFFICULTIES.map((option) => (
+            <legend className="text-sm font-medium">Difficulty</legend>
+            <p className="text-ink-2 mt-1 text-[13px]">Harder habits earn more XP per check-in</p>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {DIFFICULTIES.map((value) => (
                 <button
-                  key={option}
+                  key={value}
                   type="button"
-                  aria-pressed={difficulty === option}
-                  onClick={() => setDifficulty(option)}
-                  className={chip(difficulty === option)}
+                  aria-pressed={difficulty === value}
+                  onClick={() => setDifficulty(value)}
+                  className={`${option(difficulty === value)} flex h-14 flex-col items-center justify-center`}
                 >
-                  {DIFFICULTY_LABEL[option]}
-                  <span className="block text-xs font-bold opacity-80">+{XP_BY_DIFFICULTY[option]} XP</span>
+                  {DIFFICULTY_LABEL[value]}
+                  <span className="mono text-muted text-xs font-normal">+{XP_BY_DIFFICULTY[value]} XP</span>
                 </button>
               ))}
             </div>
           </fieldset>
 
           <fieldset>
-            <legend className="text-sm font-bold">Schedule</legend>
-            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-              <button type="button" aria-pressed={daily} onClick={() => setDaily(true)} className={chip(daily)}>
+            <legend className="text-sm font-medium">Schedule</legend>
+            <div className="seg mt-2 w-full" role="radiogroup" aria-label="Schedule">
+              <button type="button" role="radio" aria-checked={daily} onClick={() => setDaily(true)} className="seg-item flex-1 justify-center">
                 Every day
               </button>
-              <button type="button" aria-pressed={!daily} onClick={() => setDaily(false)} className={chip(!daily)}>
+              <button type="button" role="radio" aria-checked={!daily} onClick={() => setDaily(false)} className="seg-item flex-1 justify-center">
                 Specific days
               </button>
             </div>
             {!daily && (
               <>
-                <div className="mt-2 grid grid-cols-7 gap-1.5">
+                <div className="mt-2 grid grid-cols-7 gap-1">
                   {ALL_DAYS.map((day) => (
                     <button
                       key={day}
@@ -175,39 +166,29 @@ export function AddHabitModal({ onAdd, onClose }: Props) {
                       aria-pressed={days.includes(day)}
                       aria-label={WEEKDAY_LONG[day]}
                       onClick={() => toggleDay(day)}
-                      className={`focus-ring rounded-xl border py-2 text-xs font-bold transition ${
-                        days.includes(day)
-                          ? 'border-transparent bg-indigo-600 text-white'
-                          : 'border-line text-muted hover:border-indigo-300'
+                      className={`focus-ring h-10 rounded-lg text-[13px] transition-colors duration-150 ease-smooth ${
+                        days.includes(day) ? 'bg-ink text-canvas' : 'border-line-strong text-ink-2 hover:bg-raised border'
                       }`}
                     >
                       {WEEKDAY_SHORT[day]}
                     </button>
                   ))}
                 </div>
-                <p className="text-muted mt-2 text-xs" aria-live="polite">
+                <p className="text-ink-2 mt-2 text-[13px]" aria-live="polite">
                   {days.length === 0
-                    ? 'Pick at least one day.'
-                    : 'Your streak only counts these days — the others never break it.'}
+                    ? 'Pick at least one day'
+                    : 'Your streak counts only these days. The others never break it.'}
                 </p>
               </>
             )}
           </fieldset>
         </div>
 
-        <div className="border-line flex justify-end gap-2 border-t px-5 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="focus-ring text-muted hover:bg-sunken rounded-xl px-4 py-2.5 text-sm font-bold"
-          >
+        <div className="border-line flex justify-end gap-2 border-t px-6 py-4">
+          <button type="button" onClick={onClose} className="btn btn-ghost">
             Cancel
           </button>
-          <button
-            type="submit"
-            disabled={!valid}
-            className="focus-ring rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-indigo-600/30 transition hover:bg-indigo-700 disabled:opacity-40 disabled:shadow-none"
-          >
+          <button type="submit" disabled={!valid} className="btn btn-primary">
             Add habit
           </button>
         </div>

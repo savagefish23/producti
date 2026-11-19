@@ -1,7 +1,6 @@
 import { dayOfMonth, formatDay, WEEKDAY_SHORT, weekdayOf } from '../lib/dates'
 import type { DayProgress } from '../lib/game'
 import type { ISODate } from '../types'
-import { ProgressRing } from './ProgressRing'
 
 interface Props {
   /** Seven days ending today, oldest first. */
@@ -11,10 +10,10 @@ interface Props {
   onSelect: (date: ISODate) => void
 }
 
-/** Horizontal 7-day calendar strip. Each day carries a mini completion ring. */
+/** Horizontal 7-day calendar strip. */
 export function DayStrip({ days, today, selected, onSelect }: Props) {
   return (
-    <div role="group" aria-label="Last seven days" className="grid grid-cols-7 gap-1.5 sm:gap-2">
+    <div role="group" aria-label="Last seven days" className="grid grid-cols-7 gap-2">
       {days.map((day) => {
         const isSelected = day.date === selected
         const isToday = day.date === today
@@ -26,24 +25,21 @@ export function DayStrip({ days, today, selected, onSelect }: Props) {
             aria-pressed={isSelected}
             aria-label={`${formatDay(day.date)}${isToday ? ' (today)' : ''}, ${summary}`}
             onClick={() => onSelect(day.date)}
-            className={`focus-ring flex flex-col items-center gap-1 rounded-2xl border px-1 py-2 transition ${
+            className={`focus-ring flex h-20 flex-col items-center justify-center gap-1 rounded-xl border transition-colors duration-150 ease-smooth ${
               isSelected
-                ? 'border-transparent bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'border-line bg-surface text-ink hover:border-indigo-300 dark:hover:border-indigo-500/60'
+                ? 'bg-ink text-canvas border-transparent'
+                : 'border-line bg-surface hover:bg-raised'
             }`}
           >
-            <span className={`text-[11px] font-semibold ${isSelected ? 'text-white/80' : 'text-muted'}`}>
+            <span className={`text-xs ${isSelected ? 'opacity-70' : 'text-ink-2'}`}>
               {isToday ? 'Today' : WEEKDAY_SHORT[weekdayOf(day.date)]}
             </span>
-            <ProgressRing
-              value={day.ratio}
-              size={34}
-              stroke={3.5}
-              trackClass={isSelected ? 'stroke-white/25' : 'stroke-(--sunken)'}
-              arcClass={isSelected ? 'stroke-white' : 'stroke-indigo-500'}
-            >
-              <span className="text-xs font-bold">{dayOfMonth(day.date)}</span>
-            </ProgressRing>
+            <span className={`mono text-base font-medium ${isToday && !isSelected ? 'text-accent-text' : ''}`}>
+              {dayOfMonth(day.date)}
+            </span>
+            <span className={`mono text-[11px] ${isSelected ? 'opacity-70' : 'text-muted'}`}>
+              {day.due === 0 ? '–' : `${day.done}/${day.due}`}
+            </span>
           </button>
         )
       })}

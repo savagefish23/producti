@@ -1,3 +1,4 @@
+import { STATUS_FEED_TEXT } from './social'
 import type {
   AppState,
   Category,
@@ -8,7 +9,8 @@ import type {
   Theme,
   Weekday,
 } from '../types'
-import { addDays } from './dates'
+import { addDays, diffDays } from './dates'
+import { LIMITS } from './validate'
 import { createSeed } from './seed'
 import {
   CHEER_LINES,
@@ -55,6 +57,8 @@ export type Action =
   | { type: 'setTheme'; theme: Theme }
   | { type: 'advanceDays'; days: number }
   | { type: 'setFastReplies'; on: boolean }
+  | ({ type: 'signIn'; name: string; sampleData: boolean } & Stamp)
+  | ({ type: 'signOut' } & Stamp)
   | ({ type: 'resetDemo' } & Stamp)
   | ({ type: 'clearAll' } & Stamp)
 
@@ -108,7 +112,7 @@ export function reducer(state: AppState, action: Action): AppState {
     }
 
     case 'addHabit': {
-      const title = action.habit.title.trim()
+      const title = action.habit.title.trim().slice(0, LIMITS.habitTitle)
       if (!title || action.habit.schedule.length === 0) return state
       return {
         ...state,
@@ -137,7 +141,7 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'setStatus': {
       if (state.profile.status === action.status) return state
       const next = { ...state, profile: { ...state.profile, status: action.status } }
-      const text = action.status === 'Idle' ? 'went idle' : `switched to ${action.status}`
+      const text = STATUS_FEED_TEXT[action.status]
       return pushFeed(next, { actor: 'me', kind: 'status', text, date: action.date, time: action.time })
     }
 
@@ -206,7 +210,11 @@ export function reducer(state: AppState, action: Action): AppState {
       // Clock moved backwards (e.g. a timezone change): nothing to settle.
       if (action.date < from) return { ...state, lastSeenDate: action.date }
 
-      const freezes = settleFreezes(state.habits, state.freezes, from, action.date)
+      // Only the last two weeks can matter: one freeze per week, so any streak
+      // is broken by then. Capping the window also bounds the work, so a huge
+      // jump in dates cannot lock up the page.
+      const settleFrom = diffDays(from, action.date) > 14 ? addDays(action.date, -14) : from
+      const freezes = settleFreezes(state.habits, state.freezes, settleFrom, action.date)
 
       // Friends kept going while the user was away: backfill up to three days.
       const firstNewDay = addDays(from, 1)
@@ -233,21 +241,41 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, theme: action.theme }
 
     case 'advanceDays':
-      return { ...state, dayOffset: state.dayOffset + Math.max(0, action.days) }
+      return {
+        ...state,
+        dayOffset: Math.min(LIMITS.dayOffset, state.dayOffset + Math.max(0, Math.trunc(action.days) || 0)),
+      }
 
     case 'setFastReplies':
       return { ...state, fastReplies: action.on }
 
-    case 'resetDemo':
-      return { ...createSeed(action.date, action.time, state.theme), fastReplies: state.fastReplies }
-
-    case 'clearAll':
-      // A genuinely fresh start: no habits, no history — shows the empty states.
+    case 'signIn': {
+      const name = action.name.trim().slice(0, 24) || 'Guest'
+      const seed = createSeed(action.date, action.time, state.theme)
       return {
-        ...createSeed(action.date, action.time, state.theme),
-        habits: [],
-        freezes: [],
+        ...seed,
+        ...(action.sampleData ? {} : { habits: [], freezes: [] }),
+        signedIn: true,
+        profile: { ...seed.profile, name },
         fastReplies: state.fastReplies,
       }
+    }
+
+    case 'signOut':
+      // Local-only demo: signing out clears this device and returns to sign-in.
+      return { ...createSeed(action.date, action.time, state.theme), fastReplies: state.fastReplies }
+
+    case 'resetDemo':
+    case 'clearAll': {
+      // Reset restores the sample data; clearAll is a fresh start with no habits.
+      const seed = createSeed(action.date, action.time, state.theme)
+      return {
+        ...seed,
+        ...(action.type === 'clearAll' ? { habits: [], freezes: [] } : {}),
+        signedIn: state.signedIn,
+        profile: { ...seed.profile, name: state.profile.name },
+        fastReplies: state.fastReplies,
+      }
+    }
   }
 }

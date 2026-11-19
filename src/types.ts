@@ -13,6 +13,14 @@ export type Difficulty = (typeof DIFFICULTIES)[number]
 export const STATUSES = ['Deep Work', 'At the Gym', 'Reading', 'Idle'] as const
 export type StatusKind = (typeof STATUSES)[number]
 
+/** Display labels in sentence case. Stored values stay as-is for saved data. */
+export const STATUS_LABEL: Record<StatusKind, string> = {
+  'Deep Work': 'Deep work',
+  'At the Gym': 'At the gym',
+  Reading: 'Reading',
+  Idle: 'Idle',
+}
+
 export type Theme = 'light' | 'dark'
 
 export interface Habit {
@@ -68,6 +76,8 @@ export interface FeedItem {
 }
 
 export interface AppState {
+  /** False shows the sign-in screen. Local-only: there is no account server. */
+  signedIn: boolean
   profile: { name: string; handle: string; status: StatusKind }
   theme: Theme
   habits: Habit[]

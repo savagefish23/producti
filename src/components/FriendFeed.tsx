@@ -1,7 +1,8 @@
-import { Flame, Heart, MessageCircleHeart } from 'lucide-react'
+import { Heart, MessageCircle } from 'lucide-react'
 import { formatWhen } from '../lib/dates'
 import type { FeedItem, Friend, ISODate } from '../types'
 import { Avatar } from './Avatar'
+import { Streak } from './Streak'
 
 interface Props {
   feed: FeedItem[]
@@ -18,19 +19,19 @@ export function FriendFeed({ feed, friends, today, myName, onCheer }: Props) {
   const items = feed.slice(0, VISIBLE)
 
   return (
-    <section className="card p-4 sm:p-5" aria-labelledby="feed-title">
-      <h2 id="feed-title" className="section-title">
-        Check-in feed
+    <section className="card p-5" aria-labelledby="feed-title">
+      <h2 id="feed-title" className="text-base font-semibold">
+        Check-ins
       </h2>
 
       {items.length === 0 ? (
         <div className="py-8 text-center">
-          <MessageCircleHeart className="text-muted/50 mx-auto size-9" aria-hidden="true" />
-          <p className="text-ink mt-2 text-sm font-bold">It's quiet… for now</p>
-          <p className="text-muted text-xs">Check in a habit and your friends will see it here.</p>
+          <MessageCircle className="text-muted mx-auto size-6" strokeWidth={1.5} aria-hidden="true" />
+          <p className="mt-2 text-sm font-medium">No check-ins yet</p>
+          <p className="text-ink-2 text-[13px]">Check in a habit and it shows up here</p>
         </div>
       ) : (
-        <ul className="divide-line mt-1 divide-y" aria-live="polite">
+        <ul className="divide-line mt-2 divide-y" aria-live="polite">
           {items.map((item) => {
             const friend = byId.get(item.actor)
             const mine = item.actor === 'me'
@@ -39,22 +40,18 @@ export function FriendFeed({ feed, friends, today, myName, onCheer }: Props) {
             // Only a friend's own check-in can be cheered.
             const cheerable = !mine && item.kind === 'checkin'
             return (
-              <li key={item.id} className="flex animate-rise items-start gap-3 py-3">
-                <Avatar name={name} color={mine ? 'me' : (friend?.color ?? 'violet')} size="sm" className="mt-0.5" />
+              <li key={item.id} className="flex items-start gap-3 py-3">
+                <Avatar name={name} me={mine} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-ink text-sm leading-snug">
-                    <span className="font-bold">{mine ? 'You' : first}</span>{' '}
-                    {item.kind === 'thanks' ? <span>replied: “{item.text}”</span> : item.text}
+                  <p className="text-sm leading-5">
+                    <span className="font-medium">{mine ? 'You' : first}</span>{' '}
+                    <span className="text-ink-2">
+                      {item.kind === 'thanks' ? <>replied “{item.text}”</> : item.text}
+                    </span>
                   </p>
-                  <p className="text-muted mt-0.5 flex items-center gap-2 text-xs">
-                    <span>{formatWhen(item.date, item.time, today)}</span>
-                    {item.streak !== undefined && item.streak > 0 && (
-                      <span className="inline-flex items-center gap-0.5 font-bold text-orange-500">
-                        <Flame className="size-3.5 fill-orange-400" aria-hidden="true" />
-                        {item.streak}
-                        <span className="sr-only"> day streak</span>
-                      </span>
-                    )}
+                  <p className="mt-1 flex items-center gap-3">
+                    <span className="mono text-muted text-xs">{formatWhen(item.date, item.time, today)}</span>
+                    {item.streak !== undefined && item.streak > 0 && <Streak count={item.streak} size="sm" />}
                   </p>
                 </div>
                 {cheerable && (
@@ -63,14 +60,12 @@ export function FriendFeed({ feed, friends, today, myName, onCheer }: Props) {
                     disabled={item.cheered}
                     onClick={() => onCheer(item)}
                     aria-label={item.cheered ? `You cheered ${first}` : `Cheer ${first}`}
-                    className={`focus-ring inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold transition active:scale-90 ${
-                      item.cheered
-                        ? 'bg-rose-500/12 text-rose-600 dark:text-rose-300'
-                        : 'bg-sunken text-muted hover:bg-rose-500/12 hover:text-rose-600 dark:hover:text-rose-300'
-                    }`}
+                    className={`btn btn-sm btn-ghost shrink-0 disabled:opacity-100 ${item.cheered ? 'text-ink' : ''}`}
                   >
                     <Heart
-                      className={`size-3.5 ${item.cheered ? 'animate-pop fill-rose-500 text-rose-500' : ''}`}
+                      className="size-4"
+                      strokeWidth={1.5}
+                      fill={item.cheered ? 'currentColor' : 'none'}
                       aria-hidden="true"
                     />
                     {item.cheered ? 'Cheered' : 'Cheer'}

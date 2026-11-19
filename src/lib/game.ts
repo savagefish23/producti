@@ -15,7 +15,7 @@ export const XP_BY_DIFFICULTY: Record<Difficulty, number> = {
 }
 
 export function habitXp(habit: Habit): number {
-  return XP_BY_DIFFICULTY[habit.difficulty]
+  return Object.hasOwn(XP_BY_DIFFICULTY, habit.difficulty) ? XP_BY_DIFFICULTY[habit.difficulty] : 0
 }
 
 /** Lifetime XP. Archived habits still count: earned XP is never taken away. */

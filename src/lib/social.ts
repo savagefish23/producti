@@ -106,23 +106,31 @@ export function sortFeed(feed: FeedItem[]): FeedItem[] {
 // ── Scripted replies ─────────────────────────────────────────────────────
 
 export const THANKS_LINES = [
-  'Thanks for the cheer! 🙌',
-  'Appreciate it — needed that today.',
-  'You legend. Right back at you 💪',
-  'Thank you! Keeps me going.',
+  'Thanks for the cheer',
+  'Appreciate it, needed that today',
+  'Right back at you',
+  'Thank you, keeps me going',
 ]
 
 export const CHEER_LINES = [
-  'cheered your check-in: {habit} 🔥',
-  'saw you finished {habit} — nice work 👏',
-  'is hyped about your {habit} streak ⚡',
+  'cheered your check-in: {habit}',
+  'saw you finished {habit}',
+  'is following your {habit} streak',
 ]
 
 export const NUDGE_LINES = [
-  'got your nudge and checked in {habit} ✅',
-  'needed that push — just finished {habit}',
+  'got your nudge and checked in {habit}',
+  'needed that push and finished {habit}',
   'is back on it after your nudge: {habit}',
 ]
+
+/** What a status change says in the feed. */
+export const STATUS_FEED_TEXT: Record<StatusKind, string> = {
+  'Deep Work': 'started deep work',
+  'At the Gym': 'headed to the gym',
+  Reading: 'started reading',
+  Idle: 'went idle',
+}
 
 export function pickLine(lines: string[], variant: number, habit = ''): string {
   return lines[Math.abs(variant) % lines.length].replace('{habit}', habit)

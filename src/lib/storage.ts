@@ -1,4 +1,5 @@
-import type { AppState } from '../types'
+import type { AppState, ISODate } from '../types'
+import { sanitizeState } from './validate'
 
 /*
  * The ONLY module that touches localStorage.
@@ -15,21 +16,17 @@ import type { AppState } from '../types'
 export const STORAGE_KEY = 'producti:state'
 const BACKUP_KEY = 'producti:state:backup'
 
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 /** Upgrades data from version N (the key) to version N + 1. */
 export type Migration = (data: unknown) => unknown
 export type Migrations = Record<number, Migration>
 
-/*
- * Example — when v2 adds a `notes` field to habits:
- *
- *   1: (data) => {
- *     const s = data as V1State
- *     return { ...s, habits: s.habits.map((h) => ({ ...h, notes: '' })) }
- *   },
- */
-const MIGRATIONS: Migrations = {}
+export const MIGRATIONS: Migrations = {
+  // v2 added the sign-in screen. Anyone with saved v1 data was already using
+  // the app, so they stay signed in.
+  1: (data) => ({ ...(data as object), signedIn: true }),
+}
 
 interface Envelope {
   schemaVersion: number
@@ -42,20 +39,6 @@ function isEnvelope(value: unknown): value is Envelope {
     value !== null &&
     typeof (value as Envelope).schemaVersion === 'number' &&
     'data' in value
-  )
-}
-
-function looksLikeState(value: unknown): value is AppState {
-  if (typeof value !== 'object' || value === null) return false
-  const s = value as Partial<AppState>
-  return (
-    Array.isArray(s.habits) &&
-    Array.isArray(s.friends) &&
-    Array.isArray(s.feed) &&
-    Array.isArray(s.freezes) &&
-    typeof s.lastSeenDate === 'string' &&
-    typeof s.profile === 'object' &&
-    s.profile !== null
   )
 }
 
@@ -78,8 +61,11 @@ export function migrate(
   return data
 }
 
-/** The saved state, or null on first run / unusable data. */
-export function loadState(): AppState | null {
+/**
+ * The saved state, validated and repaired (see validate.ts), or null on first
+ * run / unusable data. `isIcon` says which icon keys exist.
+ */
+export function loadState(today: ISODate, isIcon: (key: string) => boolean): AppState | null {
   let text: string | null
   try {
     text = localStorage.getItem(STORAGE_KEY)
@@ -89,8 +75,8 @@ export function loadState(): AppState | null {
   if (text === null) return null
 
   try {
-    const data = migrate(JSON.parse(text))
-    if (looksLikeState(data)) return data
+    const state = sanitizeState(migrate(JSON.parse(text)), today, isIcon)
+    if (state) return state
   } catch {
     // fall through to the backup below
   }
@@ -102,6 +88,17 @@ export function loadState(): AppState | null {
     // nothing more we can do
   }
   return null
+}
+
+/** Move saved data aside (kept as a backup) so the app starts fresh. */
+export function resetStoredState(): void {
+  try {
+    const text = localStorage.getItem(STORAGE_KEY)
+    if (text !== null) localStorage.setItem(BACKUP_KEY, text)
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // storage blocked: nothing saved, nothing to reset
+  }
 }
 
 export function saveState(state: AppState): void {

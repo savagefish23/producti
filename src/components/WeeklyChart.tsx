@@ -13,9 +13,9 @@ interface Props {
 const GRID = [100, 50, 0]
 
 /**
- * Weekly consistency: share of scheduled habits completed per day.
- * One series, one hue; the selected day is the emphasised bar. Each bar is a
- * button (hover/focus shows the exact figures, click jumps to that day).
+ * The main chart: share of scheduled habits completed per day. Neutral bars;
+ * the selected day is the one bar in the accent. Hover or focus shows exact
+ * figures, click jumps to that day.
  */
 export function WeeklyChart({ days, today, selected, onSelect }: Props) {
   const scheduled = days.filter((d) => d.due > 0)
@@ -24,37 +24,36 @@ export function WeeklyChart({ days, today, selected, onSelect }: Props) {
   const average = due ? Math.round((done / due) * 100) : 0
 
   return (
-    <section className="card p-4 sm:p-5" aria-labelledby="chart-title">
-      <div className="flex items-end justify-between gap-3">
+    <section className="card p-5 sm:p-6" aria-labelledby="chart-title">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 id="chart-title" className="section-title">
+          <h2 id="chart-title" className="text-base font-semibold">
             Weekly consistency
           </h2>
-          <p className="text-muted text-xs">Scheduled habits completed, last 7 days</p>
+          <p className="text-ink-2 text-[13px]">Scheduled habits completed, last 7 days</p>
         </div>
-        <p className="text-right">
-          <span className="text-ink text-2xl leading-none font-extrabold">{average}%</span>
-          <span className="text-muted block text-[11px] font-medium">
+        <div className="text-right">
+          <p className="mono text-[28px] leading-9 font-medium">{average}%</p>
+          <p className="mono text-muted text-xs">
             {done} of {due} check-ins
-          </span>
-        </p>
+          </p>
+        </div>
       </div>
 
-      <div className="mt-4 flex gap-2">
-        {/* Y axis */}
-        <div className="text-muted flex h-36 w-7 flex-col justify-between text-right text-[10px] leading-none" aria-hidden="true">
+      <div className="mt-6 flex gap-3">
+        <div
+          className="mono text-muted flex h-48 w-8 flex-col justify-between text-right text-[11px] leading-none"
+          aria-hidden="true"
+        >
           {GRID.map((g) => (
-            <span key={g} className="first:-translate-y-1 last:translate-y-1">
-              {g}%
-            </span>
+            <span key={g}>{g}%</span>
           ))}
         </div>
 
         <div className="relative flex-1">
-          {/* Gridlines */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 flex h-36 flex-col justify-between" aria-hidden="true">
+          <div className="pointer-events-none absolute inset-x-0 top-1 flex h-46 flex-col justify-between" aria-hidden="true">
             {GRID.map((g) => (
-              <span key={g} className="border-line block border-t border-dashed last:border-solid" />
+              <span key={g} className={`border-line block border-t ${g === 0 ? '' : 'border-dashed'}`} />
             ))}
           </div>
 
@@ -73,32 +72,26 @@ export function WeeklyChart({ days, today, selected, onSelect }: Props) {
                   aria-label={label}
                   aria-pressed={isSelected}
                   onClick={() => onSelect(day.date)}
-                  className="group relative flex flex-col items-center rounded-lg outline-none"
+                  className="group relative flex flex-col items-center outline-none"
                 >
-                  <span className="flex h-36 w-full items-end justify-center">
+                  <span className="flex h-47 w-full items-end justify-center pt-1">
                     <span
-                      className={`w-5 rounded-t transition-[height,background-color] duration-500 ease-out group-focus-visible:ring-2 group-focus-visible:ring-violet-500 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-(--surface) sm:w-7 ${
-                        isSelected
-                          ? 'bg-indigo-500'
-                          : 'bg-indigo-500/35 group-hover:bg-indigo-500/60 dark:bg-indigo-400/35 dark:group-hover:bg-indigo-400/60'
+                      className={`w-6 rounded-t transition-colors duration-150 ease-smooth group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-(--accent) sm:w-8 ${
+                        isSelected ? 'bg-accent' : 'bg-bar group-hover:bg-line-strong'
                       }`}
                       style={{ height: day.due === 0 ? 2 : `max(2px, ${percent}%)` }}
                     />
                   </span>
-                  <span
-                    className={`mt-1.5 text-[11px] font-semibold ${isSelected ? 'text-ink' : 'text-muted'}`}
-                    aria-hidden="true"
-                  >
+                  <span className={`mt-2 text-xs ${isSelected ? 'text-ink font-medium' : 'text-ink-2'}`} aria-hidden="true">
                     {day.date === today ? 'Today' : WEEKDAY_SHORT[weekdayOf(day.date)]}
                   </span>
 
-                  {/* Tooltip */}
                   <span
                     role="presentation"
-                    className="bg-ink text-surface pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded-lg px-2.5 py-1.5 text-center text-[11px] leading-tight font-semibold whitespace-nowrap shadow-lg group-hover:block group-focus-visible:block"
+                    className="bg-ink text-canvas pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded-lg px-3 py-2 text-left text-xs whitespace-nowrap shadow-(--shadow-lg) group-hover:block group-focus-visible:block"
                   >
                     {formatDay(day.date)}
-                    <span className="block font-medium opacity-80">
+                    <span className="mono block opacity-70">
                       {day.due === 0 ? 'Nothing scheduled' : `${day.done} of ${day.due} · ${percent}%`}
                     </span>
                   </span>

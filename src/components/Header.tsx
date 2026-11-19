@@ -1,16 +1,18 @@
-import { Crown, FlaskConical, Gem, History, Medal, Moon, Shield, Sun, Zap, type LucideIcon } from 'lucide-react'
+import { Crown, Gem, History, LogOut, Medal, Moon, Shield, Sun, type LucideIcon } from 'lucide-react'
+import { useState } from 'react'
 import { formatDay } from '../lib/dates'
 import type { DayProgress, RankInfo, RankName } from '../lib/game'
-import { STATUSES, type ISODate, type StatusKind, type Theme } from '../types'
+import { STATUS_LABEL, STATUSES, type ISODate, type StatusKind, type Theme } from '../types'
 import { Avatar } from './Avatar'
 import { STATUS_ICONS } from './icons'
-import { ProgressRing } from './ProgressRing'
+import { Logo } from './Logo'
+import { formatNumber } from './styles'
 
-const RANK_STYLE: Record<RankName, { icon: LucideIcon; badge: string }> = {
-  Bronze: { icon: Shield, badge: 'bg-orange-300 text-orange-950' },
-  Silver: { icon: Medal, badge: 'bg-slate-200 text-slate-800' },
-  Gold: { icon: Crown, badge: 'bg-yellow-300 text-yellow-950' },
-  Diamond: { icon: Gem, badge: 'bg-cyan-200 text-cyan-950' },
+const RANK_ICON: Record<RankName, LucideIcon> = {
+  Bronze: Shield,
+  Silver: Medal,
+  Gold: Crown,
+  Diamond: Gem,
 }
 
 interface Props {
@@ -23,9 +25,11 @@ interface Props {
   onStatus: (status: StatusKind) => void
   theme: Theme
   onToggleTheme: () => void
+  onSignOut: () => void
   dayOffset: number
 }
 
+/** Top bar, page title, status control and the three overview figures. */
 export function Header({
   name,
   today,
@@ -36,130 +40,170 @@ export function Header({
   onStatus,
   theme,
   onToggleTheme,
+  onSignOut,
   dayOffset,
 }: Props) {
-  const RankIcon = RANK_STYLE[rank.name].icon
-  const percent = Math.round(progress.ratio * 100)
+  const [confirmSignOut, setConfirmSignOut] = useState(false)
+  const RankIcon = RANK_ICON[rank.name]
 
   return (
-    <header className="bg-linear-to-br from-violet-600 via-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-900/20 lg:rounded-b-3xl">
-      <div className="mx-auto max-w-6xl px-4 pt-4 pb-5 sm:px-6">
-        {/* Top bar */}
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-extrabold tracking-tight">Producti</span>
+    <header>
+      <div className="border-line bg-surface border-b">
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
+          <Logo />
+          <span className="text-[17px] font-semibold">Producti</span>
           <span
-            className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold"
+            className="mono text-muted hidden items-center gap-2 text-xs sm:inline-flex"
             title="Friends, their check-ins and replies are simulated on this device. Nothing is sent anywhere."
           >
-            <FlaskConical className="size-3.5" aria-hidden="true" />
-            Demo mode — simulated friends
+            <span className="bg-muted size-1.5 rounded-full" aria-hidden="true" />
+            Demo, simulated friends
+          </span>
+          <span className="mono text-muted text-xs sm:hidden" title="Friends are simulated on this device">
+            Demo
           </span>
           {dayOffset > 0 && (
-            <span className="hidden items-center gap-1 rounded-full bg-amber-300 px-2.5 py-1 text-xs font-bold text-amber-950 sm:inline-flex">
-              <History className="size-3.5" aria-hidden="true" />
-              Time travel +{dayOffset}d
+            <span className="mono text-accent-text inline-flex items-center gap-1 text-xs">
+              <History className="size-3.5" strokeWidth={1.5} aria-hidden="true" />+{dayOffset}d
             </span>
           )}
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="ml-auto inline-flex size-9 items-center justify-center rounded-full bg-white/15 transition hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          >
-            {theme === 'dark' ? <Sun className="size-4.5" /> : <Moon className="size-4.5" />}
-          </button>
-        </div>
 
-        {/* Profile + rank + ring */}
-        <div className="mt-5 flex items-center gap-4">
-          <Avatar name={name} color="me" size="lg" className="ring-2 ring-white/40" />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-white/75">{formatDay(today)}</p>
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              <h1 className="text-xl font-extrabold tracking-tight sm:text-2xl">Hey, {name}</h1>
-              <span
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${RANK_STYLE[rank.name].badge}`}
-              >
-                <RankIcon className="size-3.5" aria-hidden="true" />
-                {rank.name}
-              </span>
-            </div>
-
-            <div className="mt-2.5 max-w-md">
-              <div className="flex items-baseline justify-between text-xs">
-                <span className="inline-flex items-center gap-1 font-bold">
-                  <Zap className="size-3.5 fill-yellow-300 text-yellow-300" aria-hidden="true" />
-                  {xp.toLocaleString()} XP
-                </span>
-                <span className="text-white/75">
-                  {rank.next ? `${rank.xpToNext.toLocaleString()} XP to ${rank.next}` : 'Top rank reached'}
-                </span>
-              </div>
-              <div
-                className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/20"
-                role="progressbar"
-                aria-label={rank.next ? `Progress to ${rank.next}` : 'Rank progress'}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(rank.progress * 100)}
-              >
-                <div
-                  className="h-full rounded-full bg-linear-to-r from-yellow-300 to-amber-300 transition-[width] duration-500 ease-out"
-                  style={{ width: `${Math.max(3, rank.progress * 100)}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div
-            role="img"
-            aria-label={`Today: ${progress.done} of ${progress.due} habits done`}
-            className="flex flex-col items-center gap-1"
-          >
-            <ProgressRing value={progress.ratio} size={76}>
-              <span className="text-lg leading-none font-extrabold">
-                {percent}
-                <span className="text-xs font-bold">%</span>
-              </span>
-            </ProgressRing>
-            <span className="text-[11px] font-semibold text-white/80">
-              {progress.due === 0 ? 'Rest day' : `${progress.done}/${progress.due} today`}
-            </span>
-          </div>
-        </div>
-
-        {/* Status */}
-        <div className="mt-4 flex items-center gap-2.5">
-          <span id="status-label" className="shrink-0 text-xs font-semibold text-white/75">
-            Status
-          </span>
-          <div
-            role="radiogroup"
-            aria-labelledby="status-label"
-            className="no-scrollbar flex gap-1.5 overflow-x-auto"
-          >
-            {STATUSES.map((option) => {
-              const Icon = STATUS_ICONS[option]
-              const active = option === status
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  onClick={() => onStatus(option)}
-                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
-                    active ? 'bg-white text-indigo-700 shadow-sm' : 'bg-white/12 text-white hover:bg-white/22'
-                  }`}
-                >
-                  <Icon className="size-3.5" aria-hidden="true" />
-                  {option}
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="btn btn-ghost btn-icon"
+            >
+              {theme === 'dark' ? (
+                <Sun className="size-4.5" strokeWidth={1.5} />
+              ) : (
+                <Moon className="size-4.5" strokeWidth={1.5} />
+              )}
+            </button>
+            {confirmSignOut ? (
+              <span className="flex items-center gap-1">
+                <span className="text-ink-2 hidden text-[13px] md:inline">Clears this device</span>
+                <button type="button" onClick={onSignOut} className="btn btn-sm btn-secondary">
+                  Sign out
                 </button>
-              )
-            })}
+                <button type="button" onClick={() => setConfirmSignOut(false)} className="btn btn-sm btn-ghost">
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmSignOut(true)}
+                className="btn btn-ghost h-9 gap-2 pr-2 pl-1"
+                aria-label={`Signed in as ${name}. Sign out`}
+              >
+                <Avatar name={name} me size="sm" />
+                <span className="text-ink hidden max-w-32 truncate sm:inline">{name}</span>
+                <LogOut className="size-4" strokeWidth={1.5} aria-hidden="true" />
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      <div className="mx-auto max-w-6xl px-4 pt-8 sm:px-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-ink-2 text-[13px]">{formatDay(today)}</p>
+            <h1 className="text-[28px] leading-tight font-semibold">Today</h1>
+          </div>
+
+          <div className="flex min-w-0 items-center gap-3">
+            <span id="status-label" className="text-ink-2 shrink-0 text-[13px]">
+              Status
+            </span>
+            <div role="radiogroup" aria-labelledby="status-label" className="seg no-scrollbar max-w-full overflow-x-auto">
+              {STATUSES.map((option) => {
+                const Icon = STATUS_ICONS[option]
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={option === status}
+                    onClick={() => onStatus(option)}
+                    className="seg-item"
+                  >
+                    <Icon className="size-4" strokeWidth={1.5} aria-hidden="true" />
+                    {STATUS_LABEL[option]}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        <dl className="card divide-line mt-6 grid grid-cols-3 divide-x">
+          <Stat label="Total XP" value={formatNumber(xp)} mono>
+            All time
+          </Stat>
+
+          <Stat
+            label="Rank"
+            value={
+              <span className="inline-flex items-center gap-2">
+                <RankIcon className="text-ink-2 hidden size-5 sm:block" strokeWidth={1.5} aria-hidden="true" />
+                {rank.name}
+              </span>
+            }
+          >
+            <Meter value={rank.progress} label={rank.next ? `Progress to ${rank.next}` : 'Rank progress'} />
+            <span className="mono">
+              {rank.next ? <>{formatNumber(rank.xpToNext)} XP<span className="hidden sm:inline"> to {rank.next}</span></> : 'Top rank'}
+            </span>
+          </Stat>
+
+          <Stat label="Done today" value={progress.due === 0 ? '0/0' : `${progress.done}/${progress.due}`} mono>
+            <Meter value={progress.ratio} label="Today's habits done" />
+            <span>{progress.due === 0 ? 'Rest day' : 'Habits'}</span>
+          </Stat>
+        </dl>
+      </div>
     </header>
+  )
+}
+
+function Stat({
+  label,
+  value,
+  mono = false,
+  children,
+}: {
+  label: string
+  value: React.ReactNode
+  mono?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1 px-4 py-4 sm:px-5">
+      <dt className="text-ink-2 text-[13px]">{label}</dt>
+      <dd className={`truncate text-xl leading-8 font-medium sm:text-[28px] sm:leading-9 ${mono ? 'mono' : ''}`}>{value}</dd>
+      <dd className="text-muted flex flex-col gap-2 text-xs">{children}</dd>
+    </div>
+  )
+}
+
+function Meter({ value, label }: { value: number; label: string }) {
+  const percent = Math.round(Math.min(1, Math.max(0, value)) * 100)
+  return (
+    <div
+      className="bg-raised h-1 overflow-hidden rounded-full"
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent}
+    >
+      <div
+        className="bg-ink-2 h-full origin-left rounded-full transition-transform duration-500 ease-smooth"
+        style={{ transform: `scaleX(${percent / 100})` }}
+      />
+    </div>
   )
 }

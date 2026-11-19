@@ -7,7 +7,11 @@ import { HappeningNow } from './components/HappeningNow'
 import { Header } from './components/Header'
 import { Leaderboard, type LeaderboardEntry } from './components/Leaderboard'
 import { MyHabits } from './components/MyHabits'
+import { Legal } from './components/Legal'
+import { SignIn } from './components/SignIn'
 import { Toasts, type Toast } from './components/Toasts'
+import { isHabitIcon } from './components/icons'
+import { useHashRoute } from './hooks/useHashRoute'
 import { useToday } from './hooks/useToday'
 import { addDays, diffDays, localTime, localToday } from './lib/dates'
 import {
@@ -28,7 +32,7 @@ import { isCompleted } from './lib/streaks'
 import type { AppState, FeedItem, Friend, Habit, ISODate, StatusKind } from './types'
 
 function initState(): AppState {
-  const saved = loadState()
+  const saved = loadState(localToday(), isHabitIcon)
   if (saved) return saved
   const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
   return createSeed(localToday(), localTime(), prefersDark ? 'dark' : 'light')
@@ -47,6 +51,7 @@ export default function App() {
 
   // "Today" is the real local day plus any dev time-travel offset.
   const realToday = useToday()
+  const route = useHashRoute()
   const today = addDays(realToday, state.dayOffset)
   // The strip shows the last seven days; anything outside falls back to today.
   const selected = picked && picked <= today && diffDays(picked, today) < 7 ? picked : today
@@ -135,7 +140,7 @@ export default function App() {
 
     const before = rankFor(xp)
     const after = rankFor(xp + habitXp(habit))
-    if (after.tier > before.tier) toast(`🏆 Rank up! You reached ${after.name}`)
+    if (after.tier > before.tier) toast(`Rank up: you reached ${after.name}`)
 
     // Occasionally a friend cheers back.
     if (state.friends.length > 0 && (state.fastReplies || chance(0.4))) {
@@ -145,7 +150,7 @@ export default function App() {
         const current = stateRef.current.habits.find((h) => h.id === habit.id)
         if (!current || !isCompleted(current, now.date)) return // un-checked meanwhile
         dispatch({ type: 'friendCheer', friendId: friend.id, habitId: habit.id, variant: variant(), ...now })
-        toast(`👏 ${firstName(friend)} cheered your check-in`)
+        toast(`${firstName(friend)} cheered your check-in`)
       })
     }
   }
@@ -158,17 +163,17 @@ export default function App() {
     // They thank you ~30s later.
     friendReplies(22, 38, () => {
       dispatch({ type: 'friendThanks', friendId: friend.id, variant: variant(), ...stamp() })
-      toast(`💬 ${firstName(friend)} thanked you for the cheer`)
+      toast(`${firstName(friend)} thanked you for the cheer`)
     })
   }
 
   const handleNudge = (friend: Friend) => {
     if (hasNudged(state, friend.id, today)) return
     dispatch({ type: 'nudge', friendId: friend.id, date: today, time: localTime() })
-    toast(`🔔 Nudge sent to ${firstName(friend)}`)
+    toast(`Nudge sent to ${firstName(friend)}`)
     friendReplies(12, 30, () => {
       dispatch({ type: 'friendNudgedCheckin', friendId: friend.id, variant: variant(), ...stamp() })
-      toast(`✅ ${firstName(friend)} checked in after your nudge`)
+      toast(`${firstName(friend)} checked in after your nudge`)
     })
   }
 
@@ -191,7 +196,6 @@ export default function App() {
     {
       id: 'me',
       name: state.profile.name,
-      color: 'me',
       isMe: true,
       weeklyXp: weeklyXp(state.habits, today),
       streak: activeDayStreak(state.habits, today),
@@ -199,7 +203,6 @@ export default function App() {
     ...state.friends.map((friend) => ({
       id: friend.id,
       name: friend.name,
-      color: friend.color,
       isMe: false,
       weeklyXp: friendWeeklyXp(friend, today, state.friendBonus),
       streak: friendStreak(friend, today),
@@ -214,14 +217,14 @@ export default function App() {
       aria-selected={tab === value}
       aria-controls={`panel-${value}`}
       onClick={() => showTab(value)}
-      className={`relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-bold transition outline-none focus-visible:bg-indigo-500/10 ${
-        tab === value ? 'text-indigo-600 dark:text-indigo-300' : 'text-muted'
+      className={`focus-visible:bg-raised relative flex h-14 flex-1 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors duration-150 ease-smooth outline-none ${
+        tab === value ? 'text-ink' : 'text-muted'
       }`}
     >
       <span className="relative">
-        <Icon className="size-5.5" aria-hidden="true" />
+        <Icon className="size-5" strokeWidth={1.5} aria-hidden="true" />
         {value === 'friends' && unseen > 0 && (
-          <span className="absolute -top-1 -right-2 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] leading-4 text-white">
+          <span className="mono bg-accent text-on-accent absolute -top-1 -right-3 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[11px]">
             {unseen}
             <span className="sr-only"> new</span>
           </span>
@@ -231,8 +234,30 @@ export default function App() {
     </button>
   )
 
+  const toggleTheme = () =>
+    dispatch({ type: 'setTheme', theme: state.theme === 'dark' ? 'light' : 'dark' })
+
+  if (route === '/privacy' || route === '/terms') {
+    return <Legal page={route === '/privacy' ? 'privacy' : 'terms'} />
+  }
+
+  if (!state.signedIn) {
+    return (
+      <SignIn
+        today={today}
+        theme={state.theme}
+        onToggleTheme={toggleTheme}
+        onSignIn={(name, sampleData) => {
+          dispatch({ type: 'signIn', name, sampleData, date: today, time: localTime() })
+          setPicked(null)
+          setTab('habits')
+        }}
+      />
+    )
+  }
+
   return (
-    <div className="min-h-dvh pb-24 lg:pb-10">
+    <div className="min-h-dvh pb-24 lg:pb-16">
       <Header
         name={state.profile.name}
         today={today}
@@ -242,13 +267,15 @@ export default function App() {
         status={state.profile.status}
         onStatus={handleStatus}
         theme={state.theme}
-        onToggleTheme={() =>
-          dispatch({ type: 'setTheme', theme: state.theme === 'dark' ? 'light' : 'dark' })
-        }
+        onToggleTheme={toggleTheme}
+        onSignOut={() => {
+          dispatch({ type: 'signOut', date: realToday, time: localTime() })
+          setDevOpen(false)
+        }}
         dayOffset={state.dayOffset}
       />
 
-      <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 pt-5 sm:px-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:pt-6">
+      <main className="animate-enter mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 pt-8 sm:px-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         <section
           id="panel-habits"
           aria-label="My habits"
@@ -273,7 +300,7 @@ export default function App() {
         <section
           id="panel-friends"
           aria-label="Friends"
-          className={`min-w-0 space-y-4 ${tab === 'friends' ? '' : 'hidden lg:block'}`}
+          className={`min-w-0 space-y-6 ${tab === 'friends' ? '' : 'hidden lg:block'}`}
         >
           <HappeningNow
             friends={state.friends}
@@ -294,13 +321,19 @@ export default function App() {
         </section>
       </main>
 
+      <footer className="text-muted mx-auto flex max-w-6xl gap-4 px-4 pt-12 text-xs sm:px-6">
+        <span>Producti, a demo</span>
+        <a href="#/privacy" className="hover:text-ink underline-offset-2 hover:underline">Privacy</a>
+        <a href="#/terms" className="hover:text-ink underline-offset-2 hover:underline">Terms</a>
+      </footer>
+
       {/* Mobile tab bar */}
       <nav
         role="tablist"
         aria-label="Sections"
-        className="border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 flex border-t pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+        className="border-line bg-surface fixed inset-x-0 bottom-0 z-30 flex border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
-        {tabButton('habits', 'My Habits', ListChecks)}
+        {tabButton('habits', 'My habits', ListChecks)}
         {tabButton('friends', 'Friends', Users)}
       </nav>
 

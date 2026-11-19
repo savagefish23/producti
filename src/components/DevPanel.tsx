@@ -1,4 +1,4 @@
-import { FastForward, RotateCcw, Sprout, Wrench, X } from 'lucide-react'
+import { FastForward, RotateCcw, Sprout, X } from 'lucide-react'
 import { formatDay } from '../lib/dates'
 import type { ISODate } from '../types'
 
@@ -12,9 +12,6 @@ interface Props {
   onClearAll: () => void
   onClose: () => void
 }
-
-const button =
-  'focus-ring inline-flex items-center justify-center gap-1.5 rounded-xl border border-line px-3 py-2 text-xs font-bold text-ink transition hover:border-indigo-400 hover:bg-indigo-500/10'
 
 /** Hidden developer panel (Alt+Shift+T): time travel and demo resets. */
 export function DevPanel({
@@ -30,59 +27,62 @@ export function DevPanel({
   return (
     <aside
       aria-label="Developer panel"
-      className="card fixed bottom-20 left-4 z-40 w-72 animate-rise p-4 shadow-2xl lg:bottom-4"
+      className="card animate-enter fixed bottom-20 left-4 z-40 w-72 p-4 shadow-(--shadow-lg) lg:bottom-4"
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-ink inline-flex items-center gap-1.5 text-sm font-extrabold">
-          <Wrench className="size-4 text-indigo-500" aria-hidden="true" />
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
           Dev panel
+          <span className="flex gap-1 font-normal">
+            <kbd className="keycap">Alt</kbd>
+            <kbd className="keycap">Shift</kbd>
+            <kbd className="keycap">T</kbd>
+          </span>
         </h2>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close developer panel"
-          className="focus-ring text-muted hover:bg-sunken rounded-full p-1"
-        >
-          <X className="size-4" />
+        <button type="button" onClick={onClose} aria-label="Close developer panel" className="btn btn-sm btn-ghost btn-icon">
+          <X className="size-4" strokeWidth={1.5} />
         </button>
       </div>
 
-      <p className="text-muted mt-2 text-xs">
-        App date: <span className="text-ink font-bold">{formatDay(today)}</span>
-        {dayOffset > 0 && ` (real date +${dayOffset}d)`}
+      <p className="text-ink-2 mt-3 text-[13px]">
+        App date <span className="mono text-ink">{formatDay(today)}</span>
+        {dayOffset > 0 && <span className="mono text-muted"> (+{dayOffset}d)</span>}
       </p>
 
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <button type="button" className={button} onClick={() => onAdvance(1)}>
-          <FastForward className="size-3.5" aria-hidden="true" /> +1 day
+        <button type="button" className="btn btn-sm btn-secondary" onClick={() => onAdvance(1)}>
+          <FastForward className="size-4" strokeWidth={1.5} aria-hidden="true" />
+          +1 day
         </button>
-        <button type="button" className={button} onClick={() => onAdvance(7)}>
-          <FastForward className="size-3.5" aria-hidden="true" /> +7 days
+        <button type="button" className="btn btn-sm btn-secondary" onClick={() => onAdvance(7)}>
+          <FastForward className="size-4" strokeWidth={1.5} aria-hidden="true" />
+          +7 days
         </button>
       </div>
-      <p className="text-muted mt-1.5 text-[11px] leading-snug">
-        Skipped days count as missed: the weekly Streak Freeze is spent first, then streaks break.
+      <p className="text-muted mt-2 text-xs">
+        Skipped days count as missed. The weekly Streak Freeze is spent first, then streaks break.
       </p>
 
-      <label className="text-ink mt-3 flex cursor-pointer items-center gap-2 text-xs font-semibold">
+      <label className="mt-4 flex cursor-pointer items-center gap-2 text-[13px]">
         <input
           type="checkbox"
           checked={fastReplies}
           onChange={(e) => onFastReplies(e.target.checked)}
-          className="size-4 accent-indigo-600"
+          className="size-4 accent-(--accent)"
         />
-        Fast friend replies (~3s, always cheer back)
+        Fast friend replies, about 3s
       </label>
 
-      <div className="border-line mt-3 grid grid-cols-2 gap-2 border-t pt-3">
-        <button type="button" className={button} onClick={onReset}>
-          <RotateCcw className="size-3.5" aria-hidden="true" /> Reset demo
+      <div className="border-line mt-4 grid grid-cols-2 gap-2 border-t pt-4">
+        <button type="button" className="btn btn-sm btn-secondary" onClick={onReset}>
+          <RotateCcw className="size-4" strokeWidth={1.5} aria-hidden="true" />
+          Reset demo
         </button>
-        <button type="button" className={button} onClick={onClearAll}>
-          <Sprout className="size-3.5" aria-hidden="true" /> Fresh start
+        <button type="button" className="btn btn-sm btn-secondary" onClick={onClearAll}>
+          <Sprout className="size-4" strokeWidth={1.5} aria-hidden="true" />
+          Fresh start
         </button>
       </div>
-      <p className="text-muted mt-1.5 text-[11px] leading-snug">
+      <p className="text-muted mt-2 text-xs">
         Reset restores the sample data. Fresh start removes all habits to show the first-run state.
       </p>
     </aside>

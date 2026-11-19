@@ -39,8 +39,13 @@ export const HABIT_ICONS: Record<string, { icon: LucideIcon; label: string }> = 
   sparkles: { icon: Sparkles, label: 'Other' },
 }
 
+/** Own keys only: a stored key like "constructor" must not hit Object.prototype. */
+export function isHabitIcon(key: string): boolean {
+  return Object.hasOwn(HABIT_ICONS, key)
+}
+
 export function habitIcon(key: string): LucideIcon {
-  return (HABIT_ICONS[key] ?? HABIT_ICONS.sparkles).icon
+  return (isHabitIcon(key) ? HABIT_ICONS[key] : HABIT_ICONS.sparkles).icon
 }
 
 export const STATUS_ICONS: Record<StatusKind, LucideIcon> = {
