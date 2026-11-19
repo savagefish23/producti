@@ -73,7 +73,7 @@ export function HabitCard({ habit, today, selected, freezes, onToggle, onArchive
   }
 
   return (
-    <li className={`card flex items-center gap-4 p-4 ${off ? 'opacity-60' : ''}`}>
+    <li className={`card flex items-center gap-4 p-4 ${off && !preview ? 'opacity-60' : ''}`}>
       <span
         className="bg-raised text-ink-2 hidden size-10 shrink-0 items-center justify-center rounded-lg sm:flex"
         aria-hidden="true"
