@@ -16,7 +16,7 @@ import { sanitizeState } from './validate'
 export const STORAGE_KEY = 'producti:state'
 const BACKUP_KEY = 'producti:state:backup'
 
-export const SCHEMA_VERSION = 3
+export const SCHEMA_VERSION = 4
 
 /** Upgrades data from version N (the key) to version N + 1. */
 export type Migration = (data: unknown) => unknown
@@ -35,6 +35,21 @@ export const MIGRATIONS: Migrations = {
     const { handle: _drop, ...rest } = profile
     void _drop
     return { ...s, profile: { ...rest, username: handle || 'you', email: '', notifications: false } }
+  },
+  // v4 removed per-habit difficulty: XP now comes from a flat base plus a
+  // streak bonus, so users cannot pick a bigger reward.
+  3: (data) => {
+    const s = data as { habits?: unknown }
+    if (!Array.isArray(s.habits)) return s
+    return {
+      ...s,
+      habits: s.habits.map((h) => {
+        if (typeof h !== 'object' || h === null) return h
+        const { difficulty: _drop, ...rest } = h as Record<string, unknown>
+        void _drop
+        return rest
+      }),
+    }
   },
 }
 

@@ -1,11 +1,11 @@
 import { X } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { WEEKDAY_LONG, WEEKDAY_SHORT } from '../lib/dates'
-import { XP_BY_DIFFICULTY } from '../lib/game'
+import { BASE_XP, STREAK_BONUS_CAP } from '../lib/game'
 import type { NewHabit } from '../lib/reducer'
-import { CATEGORIES, DIFFICULTIES, type Category, type Difficulty, type Weekday } from '../types'
+import { CATEGORIES, type Category, type Weekday } from '../types'
 import { HABIT_ICONS } from './icons'
-import { CATEGORY_DOT, DIFFICULTY_LABEL } from './styles'
+import { CATEGORY_DOT } from './styles'
 
 interface Props {
   onAdd: (habit: NewHabit) => void
@@ -29,7 +29,6 @@ export function AddHabitModal({ onAdd, onClose }: Props) {
   const [title, setTitle] = useState('')
   const [icon, setIcon] = useState('target')
   const [category, setCategory] = useState<Category>('Health')
-  const [difficulty, setDifficulty] = useState<Difficulty>('medium')
   const [daily, setDaily] = useState(true)
   const [days, setDays] = useState<Weekday[]>(WEEKDAYS)
 
@@ -47,7 +46,7 @@ export function AddHabitModal({ onAdd, onClose }: Props) {
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (!valid) return
-    onAdd({ title: title.trim(), icon, category, difficulty, schedule })
+    onAdd({ title: title.trim(), icon, category, schedule })
     onClose()
   }
 
@@ -127,24 +126,6 @@ export function AddHabitModal({ onAdd, onClose }: Props) {
             </div>
           </fieldset>
 
-          <fieldset>
-            <legend className="text-sm font-medium">Difficulty</legend>
-            <p className="text-ink-2 mt-1 text-[13px]">Harder habits earn more XP per check-in</p>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {DIFFICULTIES.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={difficulty === value}
-                  onClick={() => setDifficulty(value)}
-                  className={`${option(difficulty === value)} flex h-14 flex-col items-center justify-center`}
-                >
-                  {DIFFICULTY_LABEL[value]}
-                  <span className="mono text-muted text-xs font-normal">+{XP_BY_DIFFICULTY[value]} XP</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
 
           <fieldset>
             <legend className="text-sm font-medium">Schedule</legend>
@@ -184,7 +165,11 @@ export function AddHabitModal({ onAdd, onClose }: Props) {
           </fieldset>
         </div>
 
-        <div className="border-line flex justify-end gap-2 border-t px-6 py-4">
+        <div className="border-line flex items-center justify-end gap-2 border-t px-6 py-4">
+          <p className="text-muted mr-auto text-xs">
+            Every check-in earns <span className="mono">{BASE_XP}</span> XP, plus{' '}
+            <span className="mono">1</span> per streak day, up to <span className="mono">+{STREAK_BONUS_CAP}</span>
+          </p>
           <button type="button" onClick={onClose} className="btn btn-ghost">
             Cancel
           </button>

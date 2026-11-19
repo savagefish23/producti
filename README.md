@@ -32,7 +32,7 @@ The sign-up screen asks for a full name, username and email, with an opt-in for 
 
 - **Habits with real streak rules.** Streaks count scheduled days only, so a Mon/Wed/Fri habit is never broken by a Tuesday.
 - **A weekly Streak Freeze.** One per week, spent automatically to protect a streak when you miss a day.
-- **XP and ranks.** Easy, Medium and Hard habits earn 10, 25 and 50 XP, from Bronze up to Diamond.
+- **Fair XP, no difficulty picker.** Every check-in earns 10 XP plus 1 per streak day (up to +20), so XP only grows by showing up. Users can't pick a bigger reward.
 - **Sign-up with validation.** Full name, username (suggested from your name) and email, with clear errors and focus on the first one to fix. A shortcut lets visitors explore with sample data instead.
 - **Friends that react.** Cheer a friend and they thank you; nudge one and they check in. It's scripted, but nothing in it is a dead button.
 - **Notifications.** Opt in at sign-up or from the sidebar to get a browser notification when a friend reacts while the app is in the background.
@@ -55,7 +55,7 @@ The sign-up screen asks for a full name, username and email, with an opt-in for 
 | Storage | `localStorage` with a versioned schema and step-by-step migrations, so saved data is never wiped |
 | Dates | Plain calendar days (`2026-11-19`), never timestamps, so streaks survive midnight and timezone changes |
 | Routing | Hash routes (`#/`, `#/friends`, `#/stats`), so it runs as plain static files |
-| Tests | 49 unit tests with Vitest, covering streaks, freezes, stats, XP, sign-up validation, migrations and security |
+| Tests | 55 unit tests with Vitest, covering streaks, freezes, stats, XP, sign-up validation, migrations and security |
 | Hosting | Vercel, with a strict Content-Security-Policy and security headers |
 
 ### Security
@@ -80,6 +80,13 @@ npm run dev      # http://localhost:5173
 | `npm test` | Run the unit tests |
 | `npm run lint` | Lint with oxlint |
 | `npm run build` | Type-check and build for production |
+
+### Privacy policy
+
+The privacy policy and terms are at real URLs, ready for app store listings:
+
+- https://getproducti.vercel.app/privacy
+- https://getproducti.vercel.app/terms
 
 ### Demo tools
 

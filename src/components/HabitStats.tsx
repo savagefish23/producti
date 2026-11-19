@@ -19,7 +19,7 @@ export function HabitStats({ habits, freezes, today }: Props) {
     best: longestStreak(habit, today, freezes),
     rate: completionRate(habit, today, 30),
     checkins: habit.completions.length,
-    xp: habit.completions.length * habitXp(habit),
+    xp: habitXp(habit, freezes),
   }))
 
   return (

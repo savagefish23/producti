@@ -24,7 +24,7 @@ export function Sidebar({ page, unseen, dayOffset, ...account }: Props) {
   return (
     <aside className="border-line bg-sidebar fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r lg:flex">
       <div className="flex h-16 items-center px-6">
-        <a href="#/" className="focus-ring rounded-md">
+        <a href="/#/" className="focus-ring rounded-md">
           <Wordmark size={22} />
         </a>
       </div>
@@ -168,7 +168,7 @@ export function MobileBars({
     <>
       <header className="border-line bg-sidebar sticky top-0 z-30 border-b lg:hidden">
         <div className="flex h-14 items-center gap-2 px-4">
-          <a href="#/" className="focus-ring rounded-md">
+          <a href="/#/" className="focus-ring rounded-md">
             <Wordmark size={20} />
           </a>
           <span className="mono text-muted text-xs">demo</span>

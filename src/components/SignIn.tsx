@@ -198,8 +198,8 @@ export function SignIn({ today, theme, onToggleTheme, onSignIn }: Props) {
         </main>
 
         <p className="text-muted flex gap-4 text-xs">
-          <a href="#/privacy" className="hover:text-ink underline-offset-2 hover:underline">Privacy</a>
-          <a href="#/terms" className="hover:text-ink underline-offset-2 hover:underline">Terms</a>
+          <a href="/privacy" className="hover:text-ink underline-offset-2 hover:underline">Privacy</a>
+          <a href="/terms" className="hover:text-ink underline-offset-2 hover:underline">Terms</a>
         </p>
       </div>
 

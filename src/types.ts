@@ -7,9 +7,6 @@ export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6
 export const CATEGORIES = ['Health', 'Focus', 'Study', 'Fitness'] as const
 export type Category = (typeof CATEGORIES)[number]
 
-export const DIFFICULTIES = ['easy', 'medium', 'hard'] as const
-export type Difficulty = (typeof DIFFICULTIES)[number]
-
 export const STATUSES = ['Deep Work', 'At the Gym', 'Reading', 'Idle'] as const
 export type StatusKind = (typeof STATUSES)[number]
 
@@ -29,7 +26,6 @@ export interface Habit {
   /** Key into the icon registry (components/icons.ts). */
   icon: string
   category: Category
-  difficulty: Difficulty
   /** Weekdays this habit is due on. All seven = daily. */
   schedule: Weekday[]
   createdOn: ISODate

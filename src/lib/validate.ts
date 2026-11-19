@@ -1,6 +1,5 @@
 import {
   CATEGORIES,
-  DIFFICULTIES,
   STATUSES,
   type AppState,
   type FeedItem,
@@ -75,7 +74,6 @@ function habit(v: unknown, isIcon: (key: string) => boolean): Habit | null {
     title,
     icon,
     category: oneOf(v.category, CATEGORIES, 'Health'),
-    difficulty: oneOf(v.difficulty, DIFFICULTIES, 'medium'),
     schedule: schedule.sort(),
     createdOn: v.createdOn,
     completions: [...new Set(list(v.completions, LIMITS.completionsPerHabit).filter(isISODate))],

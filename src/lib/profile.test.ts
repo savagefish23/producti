@@ -55,3 +55,13 @@ describe('v2 → v3 migration', () => {
     expect(out.profile).toMatchObject({ email: '', username: 'you' })
   })
 })
+
+describe('v3 → v4 migration', () => {
+  it('drops the old per-habit difficulty', () => {
+    const v4 = createSeed('2026-11-19', '12:00')
+    const v3 = { ...v4, signedIn: true, habits: v4.habits.map((h) => ({ ...h, difficulty: 'hard' })) }
+    const migrated = migrate({ schemaVersion: 3, data: v3 }, MIGRATIONS, SCHEMA_VERSION) as typeof v4
+    expect(migrated.habits.every((h) => !('difficulty' in h))).toBe(true)
+    expect(migrated.habits).toHaveLength(v4.habits.length)
+  })
+})

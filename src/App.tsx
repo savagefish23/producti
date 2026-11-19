@@ -20,7 +20,7 @@ import { addDays, diffDays, formatDay, localTime, localToday } from './lib/dates
 import {
   activeDayStreak,
   dayProgress,
-  habitXp,
+  nextCheckinXp,
   rankFor,
   recentProgress,
   totalXp,
@@ -145,7 +145,7 @@ export default function App() {
   const firstName = (friend: Friend) => friend.name.split(' ')[0]
 
   // ── Handlers ───────────────────────────────────────────────────────────
-  const xp = totalXp(state.habits)
+  const xp = totalXp(state.habits, state.freezes)
 
   const handleToggle = (habit: Habit) => {
     const completing = !isCompleted(habit, today)
@@ -153,7 +153,7 @@ export default function App() {
     if (!completing) return
 
     const before = rankFor(xp)
-    const after = rankFor(xp + habitXp(habit))
+    const after = rankFor(xp + nextCheckinXp(habit, today, state.freezes))
     if (after.tier > before.tier) toast(`Rank up: you reached ${after.name}`)
 
     // Occasionally a friend cheers back.
@@ -206,7 +206,7 @@ export default function App() {
       id: 'me',
       name: state.profile.name,
       isMe: true,
-      weeklyXp: weeklyXp(state.habits, today),
+      weeklyXp: weeklyXp(state.habits, state.freezes, today),
       streak: activeDayStreak(state.habits, today),
     },
     ...state.friends.map((friend) => ({
@@ -350,10 +350,10 @@ export default function App() {
 
         <footer className="text-muted mt-16 flex gap-4 text-xs">
           <span>Producti, a demo</span>
-          <a href="#/privacy" className="hover:text-ink underline-offset-2 hover:underline">
+          <a href="/privacy" className="hover:text-ink underline-offset-2 hover:underline">
             Privacy
           </a>
-          <a href="#/terms" className="hover:text-ink underline-offset-2 hover:underline">
+          <a href="/terms" className="hover:text-ink underline-offset-2 hover:underline">
             Terms
           </a>
         </footer>

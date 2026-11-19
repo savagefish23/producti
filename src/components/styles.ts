@@ -1,4 +1,4 @@
-import type { Category, Difficulty } from '../types'
+import type { Category } from '../types'
 
 /*
  * Categories carry meaning, so each gets one muted hue — shown only as a
@@ -9,12 +9,6 @@ export const CATEGORY_DOT: Record<Category, string> = {
   Focus: 'bg-[#5f7aa6]',
   Study: 'bg-[#b8892f]',
   Fitness: 'bg-[#9a5a7a]',
-}
-
-export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
-  easy: 'Easy',
-  medium: 'Medium',
-  hard: 'Hard',
 }
 
 const NUMBER = new Intl.NumberFormat('en-US')

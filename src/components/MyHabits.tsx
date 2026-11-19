@@ -22,9 +22,9 @@ interface Props {
 }
 
 const STARTERS: NewHabit[] = [
-  { title: 'Drink 2L of water', icon: 'droplets', category: 'Health', difficulty: 'easy', schedule: [0, 1, 2, 3, 4, 5, 6] },
-  { title: 'Read 20 pages', icon: 'book', category: 'Study', difficulty: 'medium', schedule: [0, 1, 2, 3, 4, 5, 6] },
-  { title: 'Gym session', icon: 'dumbbell', category: 'Fitness', difficulty: 'hard', schedule: [1, 3, 5] },
+  { title: 'Drink 2L of water', icon: 'droplets', category: 'Health', schedule: [0, 1, 2, 3, 4, 5, 6] },
+  { title: 'Read 20 pages', icon: 'book', category: 'Study', schedule: [0, 1, 2, 3, 4, 5, 6] },
+  { title: 'Gym session', icon: 'dumbbell', category: 'Fitness', schedule: [1, 3, 5] },
 ]
 
 export function MyHabits({

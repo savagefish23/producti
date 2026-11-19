@@ -58,27 +58,27 @@ interface SeedHabit {
 
 const SEED_HABITS: SeedHabit[] = [
   {
-    habit: { id: 'h1', title: 'Drink 2L of water', icon: 'droplets', category: 'Health', difficulty: 'easy', schedule: DAILY },
+    habit: { id: 'h1', title: 'Drink 2L of water', icon: 'droplets', category: 'Health', schedule: DAILY },
     liveDays: 12,
     rate: 0.85,
   },
   {
-    habit: { id: 'h2', title: 'Deep work block', icon: 'target', category: 'Focus', difficulty: 'hard', schedule: [1, 2, 3, 4, 5] },
+    habit: { id: 'h2', title: 'Deep work block', icon: 'target', category: 'Focus', schedule: [1, 2, 3, 4, 5] },
     liveDays: 9,
     rate: 0.8,
   },
   {
-    habit: { id: 'h3', title: 'Read 20 pages', icon: 'book', category: 'Study', difficulty: 'medium', schedule: DAILY },
+    habit: { id: 'h3', title: 'Read 20 pages', icon: 'book', category: 'Study', schedule: DAILY },
     liveDays: 28, // one gap at day −8, covered by a Streak Freeze
     rate: 1,
   },
   {
-    habit: { id: 'h4', title: 'Gym session', icon: 'dumbbell', category: 'Fitness', difficulty: 'hard', schedule: [1, 3, 5] },
+    habit: { id: 'h4', title: 'Gym session', icon: 'dumbbell', category: 'Fitness', schedule: [1, 3, 5] },
     liveDays: 8,
     rate: 0.75,
   },
   {
-    habit: { id: 'h5', title: 'Meditate 10 min', icon: 'brain', category: 'Focus', difficulty: 'easy', schedule: DAILY },
+    habit: { id: 'h5', title: 'Meditate 10 min', icon: 'brain', category: 'Focus', schedule: DAILY },
     liveDays: 3,
     rate: 0.7,
   },

@@ -46,10 +46,10 @@ describe('sanitizeState: tampered saved data', () => {
     expect(out.habits.map((h) => h.title)).toEqual(['Drink 2L of water', 'Meditate 10 min'])
   })
 
-  it('never lets XP become NaN', () => {
+  it('never lets XP become NaN, and drops any old difficulty field', () => {
     const out = load(tamper((s) => (s.habits[0].difficulty = 'legendary')))!
-    expect(out.habits[0].difficulty).toBe('medium')
-    expect(Number.isFinite(totalXp(out.habits))).toBe(true)
+    expect('difficulty' in out.habits[0]).toBe(false)
+    expect(Number.isFinite(totalXp(out.habits, out.freezes))).toBe(true)
   })
 
   it('repairs the profile and caps string lengths', () => {
@@ -119,7 +119,7 @@ describe('reducer: bounded work', () => {
   it('caps habit titles even if the form is bypassed', () => {
     const s = reducer(seed(), {
       type: 'addHabit',
-      habit: { title: 'y'.repeat(500), icon: 'target', category: 'Focus', difficulty: 'easy', schedule: [1] },
+      habit: { title: 'y'.repeat(500), icon: 'target', category: 'Focus', schedule: [1] },
       date: TODAY,
       time: '09:00',
     })

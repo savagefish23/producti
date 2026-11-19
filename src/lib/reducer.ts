@@ -2,7 +2,6 @@ import { STATUS_FEED_TEXT } from './social'
 import type {
   AppState,
   Category,
-  Difficulty,
   FeedItem,
   ISODate,
   StatusKind,
@@ -40,7 +39,6 @@ export interface NewHabit {
   title: string
   icon: string
   category: Category
-  difficulty: Difficulty
   schedule: Weekday[]
 }
 

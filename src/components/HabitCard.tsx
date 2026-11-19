@@ -1,12 +1,12 @@
 import { Check, Snowflake, Trash2 } from 'lucide-react'
 import { useState, type CSSProperties } from 'react'
 import { formatDay, lastDays, WEEKDAY_SHORT, weekdayOf } from '../lib/dates'
-import { habitXp } from '../lib/game'
+import { nextCheckinXp } from '../lib/game'
 import { currentStreak, dayState, type DayState } from '../lib/streaks'
 import type { FreezeUse, Habit, ISODate, Weekday } from '../types'
 import { HabitGlyph } from './HabitGlyph'
 import { Streak } from './Streak'
-import { CATEGORY_DOT, DIFFICULTY_LABEL } from './styles'
+import { CATEGORY_DOT } from './styles'
 
 interface Props {
   habit: Habit
@@ -65,7 +65,8 @@ export function HabitCard({ habit, today, selected, freezes, onToggle, onArchive
   const isToday = selected === today
   const done = state === 'done'
   const off = state === 'off'
-  const xp = habitXp(habit)
+  // What today's check-in earns: grows with the streak.
+  const xp = nextCheckinXp(habit, today, freezes)
 
   const handleToggle = () => {
     if (!done) setBurst((n) => n + 1)
@@ -95,8 +96,9 @@ export function HabitCard({ habit, today, selected, freezes, onToggle, onArchive
           <span className="text-muted" aria-hidden="true">
             ·
           </span>
-          <span>{DIFFICULTY_LABEL[habit.difficulty]}</span>
-          <span className="mono text-muted text-xs">+{xp} XP</span>
+          <span className="mono text-muted text-xs" title="10 XP per check-in, plus 1 per streak day (up to +20)">
+            +{xp} XP
+          </span>
           <span className="mono text-muted hidden text-xs md:inline">{scheduleLabel(habit)}</span>
         </p>
 

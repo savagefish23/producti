@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AppState, FreezeUse, Habit, Weekday } from '../types'
 import { addDays, diffDays, lastDays, localToday, startOfWeek, weekdayOf } from './dates'
-import { activeDayStreak, dayProgress, rankFor, totalXp, weeklyXp } from './game'
+import { activeDayStreak, checkinXp, completionXp, dayProgress, nextCheckinXp, rankFor, totalXp, weeklyXp, xpBetween } from './game'
 import { reducer } from './reducer'
 import { createSeed } from './seed'
 import { friendDayXp, friendStreak, friendWeeklyXp } from './social'
@@ -20,7 +20,6 @@ function habit(over: Partial<Habit> = {}): Habit {
     title: 'Test',
     icon: 'target',
     category: 'Focus',
-    difficulty: 'medium',
     schedule: DAILY,
     createdOn: '2026-10-01',
     completions: [],
@@ -136,21 +135,55 @@ describe('streak freeze', () => {
 })
 
 describe('xp and ranks', () => {
-  it('weights XP by difficulty', () => {
-    const habits = [
-      habit({ id: 'e', difficulty: 'easy', completions: [FRI] }),
-      habit({ id: 'm', difficulty: 'medium', completions: [FRI, '2026-11-12'] }),
-      habit({ id: 'x', difficulty: 'hard', completions: ['2026-11-01'] }),
-    ]
-    expect(totalXp(habits)).toBe(10 + 50 + 50)
-    expect(weeklyXp(habits, FRI)).toBe(10 + 50) // the 1st is a previous week
+  it('gives a flat base plus one per streak day, capped at +20', () => {
+    expect([1, 2, 3, 21, 22, 100].map(checkinXp)).toEqual([10, 11, 12, 30, 30, 30])
+  })
+
+  it('earns XP per check-in from the streak on that day', () => {
+    // Mon 9, Tue 10, Wed 11 in a row, then a gap on Thu 12, then Fri 13.
+    const h = habit({ completions: ['2026-11-09', '2026-11-10', '2026-11-11', FRI] })
+    expect([...completionXp(h, []).entries()].sort()).toEqual([
+      ['2026-11-09', 10],
+      ['2026-11-10', 11],
+      ['2026-11-11', 12],
+      [FRI, 10], // the gap reset the streak
+    ])
+    expect(totalXp([h], [])).toBe(43)
+    expect(weeklyXp([h], [], FRI)).toBe(43)
+    expect(xpBetween([h], [], '2026-11-11', FRI)).toBe(22)
+  })
+
+  it('lets a frozen day carry the streak bonus forward', () => {
+    const h = habit({ completions: ['2026-11-10', '2026-11-11', FRI] })
+    const freeze: FreezeUse = { habitId: 'h', date: '2026-11-12', weekStart: '2026-11-09' }
+    expect(completionXp(h, [freeze]).get(FRI)).toBe(12)
+    expect(completionXp(h, []).get(FRI)).toBe(10)
+  })
+
+  it('counts only scheduled days toward the bonus', () => {
+    const h = habit({ schedule: MWF, completions: ['2026-11-06', '2026-11-09', '2026-11-11'] })
+    expect(completionXp(h, []).get('2026-11-11')).toBe(12) // Fri, Mon, Wed: a 3-day streak
+  })
+
+  it('previews what checking in today would earn', () => {
+    const h = habit({ completions: ['2026-11-11', '2026-11-12'] })
+    expect(nextCheckinXp(h, FRI, [])).toBe(12)
+    expect(nextCheckinXp({ ...h, completions: [...h.completions, FRI] }, FRI, [])).toBe(12)
+    expect(nextCheckinXp(habit(), FRI, [])).toBe(10)
+  })
+
+  it('never changes XP already earned when later days are missed', () => {
+    const h = habit({ completions: ['2026-11-09', '2026-11-10'] })
+    expect(totalXp([h], [])).toBe(21)
+    // Days pass without check-ins: the earned 21 stays.
+    expect(xpBetween([h], [], '2026-11-01', '2026-11-30')).toBe(21)
   })
 
   it('maps XP to rank tiers', () => {
     expect(rankFor(0).name).toBe('Bronze')
-    expect(rankFor(749).name).toBe('Bronze')
-    expect(rankFor(750)).toMatchObject({ name: 'Silver', next: 'Gold', xpToNext: 2000, progress: 0 })
-    expect(rankFor(2750).name).toBe('Gold')
+    expect(rankFor(499).name).toBe('Bronze')
+    expect(rankFor(500)).toMatchObject({ name: 'Silver', next: 'Gold', xpToNext: 1300, progress: 0 })
+    expect(rankFor(1800).name).toBe('Gold')
     expect(rankFor(99999)).toMatchObject({ name: 'Diamond', next: null, progress: 1 })
   })
 
@@ -178,10 +211,11 @@ describe('reducer', () => {
     const s0 = seed()
     const water = s0.habits[0]
     const s1 = reducer(s0, { type: 'toggleHabit', habitId: water.id, date: FRI, time: '12:01' })
-    expect(totalXp(s1.habits) - totalXp(s0.habits)).toBe(10)
+    // Water is on a 12-day streak, so today's check-in is day 13: 10 + 12.
+    expect(totalXp(s1.habits, s1.freezes) - totalXp(s0.habits, s0.freezes)).toBe(22)
     expect(s1.feed[0]).toMatchObject({ actor: 'me', kind: 'checkin', streak: 13 })
     const s2 = reducer(s1, { type: 'toggleHabit', habitId: water.id, date: FRI, time: '12:02' })
-    expect(totalXp(s2.habits)).toBe(totalXp(s0.habits))
+    expect(totalXp(s2.habits, s2.freezes)).toBe(totalXp(s0.habits, s0.freezes))
     expect(s2.feed).toEqual(s0.feed)
   })
 
@@ -236,7 +270,7 @@ describe('reducer', () => {
   it('archiving keeps earned XP', () => {
     const s0 = seed()
     const s1 = reducer(s0, { type: 'archiveHabit', habitId: s0.habits[1].id, date: FRI, time: '12:00' })
-    expect(totalXp(s1.habits)).toBe(totalXp(s0.habits))
+    expect(totalXp(s1.habits, s1.freezes)).toBe(totalXp(s0.habits, s0.freezes))
     expect(dayProgress(s1.habits, FRI).due).toBe(dayProgress(s0.habits, FRI).due - 1)
   })
 
@@ -260,9 +294,9 @@ describe('seed', () => {
       expect(currentStreak(water, today, s.freezes)).toBe(12)
       expect(currentStreak(read, today, s.freezes)).toBe(27)
       expect(freezeAvailable(s.freezes, today)).toBe(true)
-      const rank = rankFor(totalXp(s.habits))
+      const rank = rankFor(totalXp(s.habits, s.freezes))
       expect(rank.name).toBe('Silver')
-      expect(rank.xpToNext).toBeLessThan(300)
+      expect(rank.xpToNext).toBeLessThan(200)
     }
   })
 })
